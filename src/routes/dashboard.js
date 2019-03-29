@@ -1,21 +1,41 @@
 import Dashboard from "../views/Dashboard/Dashboard";
-// import UserProfile from "views/UserProfile/UserProfile";
-// import TableList from "views/TableList/TableList";
-// import Typography from "views/Typography/Typography";
-// import Icons from "views/Icons/Icons";
-// import Maps from "views/Maps/Maps";
-// import Notifications from "views/Notifications/Notifications";
-// import Upgrade from "views/Upgrade/Upgrade";
+import Relatorios from "../views/Relatorios/Relatorios";
+import Equipe from "../views/Equipe/Equipe";
+import Confronto from "../views/Confronto/Confron";
+import Auditoria from "../views/Auditoria/Auditoria";
 
-import HelloWorld from "../components/App/HelloWorld"
+import HelloWorld from "../components/App/HelloWorld";
 
 const dashboardRoutes = [
   {
     path: "/dashboard",
     name: "Dashboard",
     // icon: "pe-7s-graph",
-    // component: Dashboard
+    component: Dashboard
+  },
+  {
+    path: "/relatorios",
+    name: "Relatorios",
+    // icon: "pe-7s-graph",
+    component: Relatorios
+  },
+  {
+    path: "/equipe",
+    name: "Equipe",
+    // icon: "pe-7s-graph",
     component: HelloWorld
+  },
+  {
+    path: "/confronto",
+    name: "Confronto",
+    // icon: "pe-7s-graph",
+    component: Confronto
+  },
+  {
+    path: "/auditoria",
+    name: "Auditoria",
+    // icon: "pe-7s-graph",
+    component: Auditoria
   },
   // {
   //   path: "/user",

@@ -31,7 +31,8 @@ class Dashboard extends Component {
   // }
   render() {
     return (
-      <div className="content">Oi
+      <div className="content">
+        <h1>Dashboard</h1>
         {/* <Grid fluid>
           <Row>
             <Col lg={3} sm={6}>

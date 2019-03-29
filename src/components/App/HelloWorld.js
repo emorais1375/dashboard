@@ -3,7 +3,7 @@ import mysql from 'mysql';
 
 import Button from 'react-bootstrap/Button';
 
-import "./HelloWorld.css";
+// import "./HelloWorld.css";
 
 class HelloWorld extends React.Component {
   constructor(props){

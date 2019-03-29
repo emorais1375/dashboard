@@ -106,7 +106,6 @@ class Dashboard extends Component {
         {/* <Sidebar {...this.props} /> */}
         <div id="main-panel" className="main-panel" ref="mainPanel">
           <Header  />
-          Header<br/>
           <Switch>
             {dashboardRoutes.map((prop, key) => {
               {/* if (prop.name === "Notifications")
@@ -131,7 +130,6 @@ class Dashboard extends Component {
           </Switch>
           
           {/* <Footer /> */}
-          <br/>Footer
         </div>
       </div>
     );
