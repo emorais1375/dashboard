@@ -1,6 +1,10 @@
 import React from 'react';
 import mysql from 'mysql';
 
+import Button from 'react-bootstrap/Button';
+
+import "./HelloWorld.css";
+
 class HelloWorld extends React.Component {
   constructor(props){
     super(props);
@@ -15,7 +19,7 @@ class HelloWorld extends React.Component {
     let connection = mysql.createConnection({
       host     : 'localhost',
       user     : 'root',
-      password : null,
+      password : 'password',
       database : 'arko_db_v2'
     });
 
@@ -57,7 +61,7 @@ class HelloWorld extends React.Component {
     return(
       <div>
         <h1>Connecting to MySQL</h1>
-        <button onClick={this.handleOnClick}>Retrieve 10 first rows in the database</button>
+        <Button variant="dark" onClick={this.handleOnClick}>Retrieve 10 first rows in the database</Button>
         <table className="table">
                 <thead>
                     <tr>
