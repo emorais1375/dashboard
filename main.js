@@ -16,6 +16,7 @@ if ( process.defaultApp || /[\\/]electron-prebuilt[\\/]/.test(process.execPath) 
 }
 
 function createWindow() {
+  startExpress();
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 1024, height: 768, show: false
@@ -78,3 +79,128 @@ app.on('activate', () => {
     createWindow();
   }
 });
+
+function startExpress () {
+  const server = require('./server')
+  const mysql = require('mysql')
+
+  server.get('/login', (req, res) => {
+    let resp = {
+      login: -1,
+      id_usuario: null,
+      usuario: null
+    }
+    let cpf = req.query.cpf;
+    let pass = req.query.password;
+    let inventario_id = 1;
+    let sql = "\
+    SELECT DISTINCT l.usuario_id, l.username\
+    FROM login l, usuario u, usuario_enderecamento ue\
+    WHERE l.login_status = 'ATIVO'\
+    AND l.usuario_id = u.id\
+    AND u.cargo = 'INVENTARIANTE'\
+    AND l.usuario_id = ue.usuario_id\
+    AND ue.inventario_id = ?\
+    AND l.password = ?\
+    AND l.cpf = ?";
+    let connection = mysql.createConnection('mysql://root:password@localhost/arko_db_v2')
+    connection.query(sql, [inventario_id,pass,cpf], (error, results, fields)=>{
+      if(error) {
+        console.log(error.code,error.fatal);
+        res.status(400).json({error:error.code})
+        return;
+      }
+      if (results.length) {
+        let newresults = results[0]
+        newresults['login'] = 0
+        res.json(newresults);
+      }
+      else {
+        res.status(401).json(resp);
+      }
+      connection.end();
+      console.log('GET /login');
+    });
+  })
+  server.get('/inventario', (req, res) => {
+    let inventario_id = 1;
+    let sql = "\
+    SELECT tipo_inventario, validade,\
+    fabricacao, lote, itens_embalagem,\
+    marca, fornecedor, ignorar_zero_esq,\
+    ignorar_zero_direita\
+    FROM inventario\
+    WHERE id = ?";
+    let connection = mysql.createConnection('mysql://root:password@localhost/arko_db_v2')
+    connection.query(sql, [inventario_id], (error, results, fields)=>{
+      if(error) {
+        console.log(error.code,error.fatal);
+        res.status(400).json({error:error.code})
+        return;
+      }
+      res.json(results[0]);
+      connection.end();
+      console.log('GET /inventario');
+    });
+  })
+  server.get('/enderecamento', (req, res) => {
+    let user_id = req.query.usuario_id;
+    let inventario_id = 1;
+    let sql = "\
+    SELECT ue.enderecamento_id, e.descricao\
+    FROM usuario_enderecamento ue, enderecamento e\
+    WHERE ue.inventario_id = ?\
+    AND ue.usuario_id = ?\
+    AND ue.enderecamento_id = e.id";
+    let connection = mysql.createConnection('mysql://root:password@localhost/arko_db_v2')
+    connection.query(sql, [inventario_id, user_id], (error, results, fields)=>{
+      if(error) {
+        console.log(error.code,error.fatal);
+        res.status(400).json({error:error.code})
+        return;
+      }
+      res.json(results);
+      connection.end();
+      console.log('GET /enderecamento');
+    });
+  })
+  server.post('/coleta', (req, res) => {
+    let coletas  = req.body;
+    let values = [];
+
+    for(var i=0; i< coletas.length; i++)
+      values.push([
+        coletas[i].usuario_id,
+        coletas[i].data,
+        coletas[i].hora,
+        coletas[i].enderecamento,
+        coletas[i].cod_barra,
+        coletas[i].validade,
+        coletas[i].fabricacao,
+        coletas[i].lote,
+        coletas[i].itens_embalagem,
+        coletas[i].marca,
+        coletas[i].fornecedor
+      ]);
+    let sql = 'INSERT INTO coleta (usuario_id,\
+    data,hora,enderecamento,cod_barra,\
+    validade,fabricacao,lote,\
+    itens_embalagem,marca,fornecedor) VALUES ?';
+    let connection = mysql.createConnection('mysql://root:password@localhost/arko_db_v2')
+    connection.query(sql, [values], (error, results, fields)=>{
+      if(error) {
+        console.log(error.code,error.fatal);
+        res.status(400).json({error:error.code})
+        return;
+      }
+      res.status(201).json({mensagem:'coleta criada!'});
+      connection.end();
+      console.log('POST /coleta');
+    });
+  })
+  server.get('/', (req, res) => {
+    // console.log(req.body)
+    console.log("GET /")
+    return res.send({message:'ok'})
+  })
+}
