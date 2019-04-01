@@ -46,6 +46,13 @@ class Equipe extends Component {
   }
   handleSubmit(ev) {
     ev.preventDefault();
+    if (this.state.inicial && this.state.final) {
+      console.log(
+        this.state.nome,
+        this.state.inicial,
+        this.state.final
+      );      
+    }
   }
   render() {
     const thArray = ["#", "Name", "Salary", "Country", "City","Actions"];
@@ -59,7 +66,7 @@ class Equipe extends Component {
             <Col md={12}>
               <Form onSubmit={this.handleSubmit}>
                 <Form.Row>
-                  <Form.Group as={Col}>
+                  <Form.Group as={Col} md="6">
                     <Form.Label>Nome</Form.Label>
                     <Form.Control as="select" name="nome" onChange={this.handleChange}>
                       <option value="0">Selecione</option>
@@ -72,12 +79,12 @@ class Equipe extends Component {
                     </Form.Control>
                 </Form.Group>
 
-                  <Form.Group as={Col}>
+                  <Form.Group as={Col} md="3">
                       <Form.Label>Inicial</Form.Label>
                       <Form.Control placeholder="Inicial" type="text" name="inicial" onChange={this.handleChange}/>
                   </Form.Group>
 
-                  <Form.Group as={Col}>
+                  <Form.Group as={Col} md="3">
                   <Form.Label>Final</Form.Label>
                   <Form.Control placeholder="Final" type="text" name="final" onChange={this.handleChange}/>
               </Form.Group>
