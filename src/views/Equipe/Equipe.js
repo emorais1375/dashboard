@@ -25,6 +25,7 @@ class Equipe extends Component {
       ],
       nome: 0, inicial: '', final: ''
     };
+    this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);  
   }
   alerta(prop, key){
@@ -35,9 +36,16 @@ class Equipe extends Component {
       tdArray: tdArray
     })
   }
+  handleChange(ev) {
+    const target = ev.target;
+    const value = target.value;
+    const name = target.name;
+    this.setState({
+      [name]: value
+    });
+  }
   handleSubmit(ev) {
     ev.preventDefault();
-    const form = ev.target;
   }
   render() {
     const thArray = ["#", "Name", "Salary", "Country", "City","Actions"];
@@ -53,7 +61,7 @@ class Equipe extends Component {
                 <Form.Row>
                   <Form.Group as={Col}>
                     <Form.Label>Nome</Form.Label>
-                    <Form.Control as="select" value={this.state.nome}>
+                    <Form.Control as="select" name="nome" onChange={this.handleChange}>
                       <option value="0">Selecione</option>
                       <option value="1">Dakota Rice</option>
                       <option value="2">Minerva Hooper</option>
@@ -66,12 +74,12 @@ class Equipe extends Component {
 
                   <Form.Group as={Col}>
                       <Form.Label>Inicial</Form.Label>
-                      <Form.Control placeholder="Inicial" type="text" value={this.state.inicial}/>
+                      <Form.Control placeholder="Inicial" type="text" name="inicial" onChange={this.handleChange}/>
                   </Form.Group>
 
                   <Form.Group as={Col}>
                   <Form.Label>Final</Form.Label>
-                  <Form.Control placeholder="Final" type="text" value={this.state.final}/>
+                  <Form.Control placeholder="Final" type="text" name="final" onChange={this.handleChange}/>
               </Form.Group>
                 </Form.Row>
                 <ButtonToolbar>
