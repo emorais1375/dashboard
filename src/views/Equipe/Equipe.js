@@ -25,6 +25,7 @@ class Equipe extends Component {
       ],
       nome: 0, inicial: '', final: ''
     };
+    this.handleCancel = this.handleCancel.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);  
   }
@@ -45,13 +46,23 @@ class Equipe extends Component {
     });
   }
   handleSubmit(ev) {
+    console.log('handleSubmit()')
     ev.preventDefault();
-    if (this.state.inicial && this.state.final) {
+    if (this.state.inicial && this.state.final && this.state.nome) {
       console.log(
         this.state.nome,
         this.state.inicial,
         this.state.final
-      );      
+      );  
+    }
+  }
+  handleCancel() {
+    console.log('handleCancel()')
+    if (this.state.inicial || this.state.final || this.state.nome) {
+      this.setState({
+        nome: 0, inicial: '', final: ''
+      });
+      console.log('limpar!')
     }
   }
   render() {
@@ -68,7 +79,7 @@ class Equipe extends Component {
                 <Form.Row>
                   <Form.Group as={Col} md="6">
                     <Form.Label>Nome</Form.Label>
-                    <Form.Control as="select" name="nome" onChange={this.handleChange}>
+                    <Form.Control as="select" name="nome" onChange={this.handleChange} value={this.state.nome}>
                       <option value="0">Selecione</option>
                       <option value="1">Dakota Rice</option>
                       <option value="2">Minerva Hooper</option>
@@ -81,17 +92,17 @@ class Equipe extends Component {
 
                   <Form.Group as={Col} md="3">
                       <Form.Label>Inicial</Form.Label>
-                      <Form.Control placeholder="Inicial" type="text" name="inicial" onChange={this.handleChange}/>
+                      <Form.Control placeholder="Inicial" type="text" name="inicial" onChange={this.handleChange} value={this.state.inicial}/>
                   </Form.Group>
 
                   <Form.Group as={Col} md="3">
                   <Form.Label>Final</Form.Label>
-                  <Form.Control placeholder="Final" type="text" name="final" onChange={this.handleChange}/>
+                  <Form.Control placeholder="Final" type="text" name="final" onChange={this.handleChange} value={this.state.final}/>
               </Form.Group>
                 </Form.Row>
                 <ButtonToolbar>
                 <Button as="input" variant="info" type="submit" value="Salvar"/>
-                <Button as="input" variant="info" type="button" value="Cancelar"/>
+                <Button as="input" variant="info" type="button" value="Cancelar" onClick={this.handleCancel}/>
                 </ButtonToolbar>
               </Form>
             </Col>
