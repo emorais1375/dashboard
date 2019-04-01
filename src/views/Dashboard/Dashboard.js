@@ -1,24 +1,96 @@
 import React, { Component } from "react";
 // import ChartistGraph from "react-chartist";
-// import { Grid, Row, Col } from "react-bootstrap";
+import { Container, Row, Col, Table, Button } from "react-bootstrap";
 
-// import { Card } from "components/Card/Card.jsx";
-// import { StatsCard } from "components/StatsCard/StatsCard.jsx";
-// import { Tasks } from "components/Tasks/Tasks.jsx";
-// import {
-//   dataPie,
-//   legendPie,
-//   dataSales,
-//   optionsSales,
-//   responsiveSales,
-//   legendSales,
-//   dataBar,
-//   optionsBar,
-//   responsiveBar,
-//   legendBar
-// } from "variables/Variables.jsx";
+import { Card } from "../../components/Card/Card";
+
+const thArray = ["ID", "Código", "Qtde"];
 
 class Dashboard extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      inventario: [],
+      base: [],
+      isPaused: true,
+      horas: 0, minutos: 0, segundos: 0,
+      isEnable: false, 
+      timeFormat: '00:00:00',
+      items: [], text: ''
+    };
+
+    this.playClock = this.playClock.bind(this);
+    this.pauseClock = this.pauseClock.bind(this);
+    this.stopClock = this.stopClock.bind(this);
+  }
+  tick() {
+    let s = this.state.segundos + 1; 
+    let min = this.state.minutos;
+    let h = this.state.horas; 
+    if (s === 60){
+      min = min + 1;
+      s = 0;
+    }
+    if (min === 60){
+      h = h + 1;
+      min = 0;
+    }
+    this.setState({
+      horas: h, minutos: min, segundos: s
+    });
+    let timeFormat = this.timeFormater(this.state.horas) + ':' +this.timeFormater(this.state.minutos) +':'+this.timeFormater(this.state.segundos);
+    this.setState({timeFormat});
+    
+  }
+  startClock(){
+    this.interval = setInterval(() => {if(!this.state.isPaused) this.tick()}, 1000);
+  }
+  playClock(){
+
+    this.setState({"isPaused": false, "isEnable": true});
+
+  }
+  stopClock(){
+    alert(
+      'Confronto\n\n' 
+      + '- Cálculos do confronto:\n\n' 
+      + '\t• Quantidade divergente: 0\n'  
+      + '\t• Custo divergente: 0\n'  
+      + '\t• Valor de Custo do inventario: 0\n'  
+      + '\t• Valor divergente em venda: 0\n\n' 
+      + '▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n'
+      + '- Relatório de confronto:\n\n'
+      + '\t• Com base no modelo em anexo\n'
+      + '\t• Quando a divergência for positiva deverá ser marcado com a cor azul\n'
+      + '\t• Quando a divergência for negativa deverá ser marcado em vermelho\n'
+      + '\t• Valores iguais continuam marcados com branco'
+    );
+    alert(
+      'Divergência\n\n' 
+      + '- Relatório de confronto:\n\n'
+      + ' End\t| Cod\t| Desc\t| Qtde base\t| Qtde inventário\n'
+    );
+    this.pauseClock();
+    this.setState({
+      horas: 0, minutos: 0, segundos: 0, "isEnable": false,
+      timeFormat: '00:00:00',
+    });
+  }
+  pauseClock(){
+    this.setState({"isPaused": true, "isEnable": false});
+  }
+  timeFormater(time) {
+    if (time < 10) {
+        time = '0' + time
+    }
+    return time
+  }
+  componentDidMount() {
+    this.startClock();
+  }
+  componentWillUnmount() {
+    clearInterval(this.interval);
+  }
   // createLegend(json) {
   //   var legend = [];
   //   for (var i = 0; i < json["names"].length; i++) {
@@ -33,6 +105,80 @@ class Dashboard extends Component {
     return (
       <div className="content">
         <h1>Dashboard</h1>
+        <Container fluid>
+          <Row>
+            <Col lg={4}  md={6}>
+              <h6>{this.state.timeFormat}</h6>
+              <Button onClick={this.playClock}>Play</Button>
+              <Button onClick={this.pauseClock}>Pause</Button>
+              <Button onClick={this.stopClock}>Stop</Button>
+            </Col>
+          </Row>
+          <Row>
+            <Col md={6}>
+              <Card 
+                // plain
+                title="Inventário"
+                // category="Here is a subtitle for this table"
+                ctTableFullWidth
+                ctTableResponsive
+                content={
+                  <Table striped>
+                    <thead>
+                      <tr>
+                        {thArray.map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {this.state.inventario.map((prop, key) => {
+                        return (
+                          <tr key={key}>
+                            <td>{prop.id}</td>
+                            <td>{prop.barcode}</td>
+                            <td>{prop.qtd}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </Table>
+                }
+                
+              />
+            </Col>
+            <Col md={6}>
+              <Card
+                title="Base de dados"
+                // category="Here is a subtitle for this table"
+                ctTableFullWidth
+                ctTableResponsive
+                content={
+                  <Table striped >
+                    <thead>
+                      <tr>
+                        {thArray.map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {this.state.base.map((prop, key) => {
+                        return (
+                          <tr key={key}>
+                            <td>{prop.id}</td>
+                            <td>{prop.barcode}</td>
+                            <td>{prop.qtd}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </Table>
+                }
+              />
+            </Col>
+          </Row>
+        </Container>
         {/* <Grid fluid>
           <Row>
             <Col lg={3} sm={6}>

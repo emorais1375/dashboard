@@ -23,7 +23,7 @@ const dashboardRoutes = [
     path: "/equipe",
     name: "Equipe",
     // icon: "pe-7s-graph",
-    component: HelloWorld
+    component: Equipe
   },
   {
     path: "/confronto",
