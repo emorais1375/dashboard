@@ -16,12 +16,14 @@ class Equipe extends Component {
     super(props);
     this.state = {
       tdArray: [
-        ["1", "Dakota Rice", "$36,738", "Niger", "Oud-Turnhout"],
-        ["2", "Minerva Hooper", "$23,789", "Curaçao", "Sinaai-Waas"],
-        ["3", "Sage Rodriguez", "$56,142", "Netherlands", "Baileux"],
-        ["4", "Philip Chaney", "$38,735", "Korea, South", "Overland Park"],
-        ["5", "Doris Greene", "$63,542", "Malawi", "Feldkirchen in Kärnten"],
-        ["6", "Mason Porter", "$78,615", "Chile", "Gloucester"]
+      ],
+      nomes: [
+        "Dakota Rice",
+        "Minerva Hooper",
+        "Sage Rodriguez",
+        "Philip Chaney",
+        "Doris Greene",
+        "Mason Porter"
       ],
       nome: 0, inicial: '', final: ''
     };
@@ -53,7 +55,17 @@ class Equipe extends Component {
         this.state.nome,
         this.state.inicial,
         this.state.final
-      );  
+      );
+      let tdArray = this.state.tdArray;
+      tdArray.push([
+        this.state.nomes[this.state.nome-1],
+        this.state.inicial,
+        this.state.final
+      ]);
+      this.setState({
+        tdArray: tdArray
+      })
+      this.handleCancel();
     }
   }
   handleCancel() {
@@ -66,7 +78,7 @@ class Equipe extends Component {
     }
   }
   render() {
-    const thArray = ["#", "Name", "Salary", "Country", "City","Actions"];
+    const thArray = ["Name", "Inicial", "Final","Actions"];
     const edit = <Tooltip id="edit_tooltip">Edit Task</Tooltip>;
     const remove = <Tooltip id="remove_tooltip">Remove</Tooltip>;
     return (
@@ -80,13 +92,10 @@ class Equipe extends Component {
                   <Form.Group as={Col} md="6">
                     <Form.Label>Nome</Form.Label>
                     <Form.Control as="select" name="nome" onChange={this.handleChange} value={this.state.nome}>
-                      <option value="0">Selecione</option>
-                      <option value="1">Dakota Rice</option>
-                      <option value="2">Minerva Hooper</option>
-                      <option value="3">Sage Rodriguez</option>
-                      <option value="4">Philip Chaney</option>
-                      <option value="5">Doris Greene</option>
-                      <option value="6">Mason Porter</option>
+                    <option value="0">Selecione</option>
+                      {this.state.nomes.map((nome, key) => {
+                        return <option key={key} value={key+1}>{nome}</option>;
+                      })}
                     </Form.Control>
                 </Form.Group>
 
