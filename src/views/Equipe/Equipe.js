@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import mysql from 'mysql';
 import {
   Container,
   Row,
@@ -10,26 +11,53 @@ import {
   ButtonToolbar,
   Form
 } from 'react-bootstrap'
-
+const config_mysql = 'mysql://root:password@localhost/arko_db_v2';
 class Equipe extends Component {
   constructor(props) {
     super(props);
     this.state = {
       tdArray: [
       ],
-      nomes: [
-        "Dakota Rice",
-        "Minerva Hooper",
-        "Sage Rodriguez",
-        "Philip Chaney",
-        "Doris Greene",
-        "Mason Porter"
-      ],
-      nome: 0, inicial: '', final: ''
+      nomes: [],
+      nome: 0, inicial: '', final: '', user_inv: []
     };
     this.handleCancel = this.handleCancel.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);  
+  }
+  componentDidMount() {
+    let connection = mysql.createConnection(config_mysql);
+    let sql = "\
+    SELECT DISTINCT l.usuario_id 'id', u.nome\
+    FROM login l, usuario u\
+    WHERE l.login_status = 'ATIVO'\
+    AND l.usuario_id = u.id\
+    AND u.cargo = 'INVENTARIANTE'";
+    connection.query(sql, (error, results, fields)=>{
+      if(error) {
+        console.log(error.code,error.fatal);
+        return;
+      }
+      console.log(results);
+      this.setState({
+        nomes: results
+      })
+      sql = "\
+      select * \
+      from usuario_enderecamento \
+      where inventario_id = 1";
+      connection.query(sql, (error, results, fields)=>{
+        if(error) {
+          console.log(error.code,error.fatal);
+          return;
+        }
+        console.log(results);
+        this.setState({
+          // nomes: results
+        })
+        connection.end();
+      });
+    });
   }
   alerta(prop, key){
     console.log('aleta ', key, prop)
@@ -58,7 +86,7 @@ class Equipe extends Component {
       );
       let tdArray = this.state.tdArray;
       tdArray.push([
-        this.state.nomes[this.state.nome-1],
+        this.state.nomes[this.state.nome-1].nome,
         this.state.inicial,
         this.state.final
       ]);
@@ -93,8 +121,8 @@ class Equipe extends Component {
                     <Form.Label>Nome</Form.Label>
                     <Form.Control as="select" name="nome" onChange={this.handleChange} value={this.state.nome}>
                     <option value="0">Selecione</option>
-                      {this.state.nomes.map((nome, key) => {
-                        return <option key={key} value={key+1}>{nome}</option>;
+                      {this.state.nomes.map((prop, key) => {
+                        return <option key={key} value={key+1}>{prop.nome}</option>;
                       })}
                     </Form.Control>
                 </Form.Group>
