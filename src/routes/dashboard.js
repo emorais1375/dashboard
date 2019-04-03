@@ -3,6 +3,7 @@ import Relatorios from "../views/Relatorios/Relatorios";
 import Equipe from "../views/Equipe/Equipe";
 import Confronto from "../views/Confronto/Confron";
 import Auditoria from "../views/Auditoria/Auditoria";
+import Enderecamento from "../views/Enderecamento/Enderecamento";
 
 import HelloWorld from "../components/App/HelloWorld";
 
@@ -24,6 +25,12 @@ const dashboardRoutes = [
     name: "Equipe",
     // icon: "pe-7s-graph",
     component: Equipe
+  },
+  {
+    path: "/enderecamento",
+    name: "Enderecamento",
+    // icon: "pe-7s-graph",
+    component: Enderecamento
   },
   {
     path: "/confronto",

@@ -95,10 +95,13 @@ class Header extends Component {
             <Nav.Link eventKey={2} href="#Equipe">
               Equipe
             </Nav.Link>
-            <Nav.Link eventKey={3} href="#Confronto">
+            <Nav.Link eventKey={3} href="#Enderecamento">
+              Enderecamento
+            </Nav.Link>
+            <Nav.Link eventKey={4} href="#Confronto">
               Confronto
             </Nav.Link>
-            <Nav.Link eventKey={4} href="#Auditoria">
+            <Nav.Link eventKey={5} href="#Auditoria">
               Auditoria
             </Nav.Link>
           </Nav>
