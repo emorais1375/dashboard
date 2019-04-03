@@ -1,5 +1,6 @@
 import React from 'react';
 import mysql from 'mysql';
+import env from '../../../.env'
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form'
 import Col from 'react-bootstrap/Col'
@@ -18,12 +19,7 @@ class HelloWorld extends React.Component {
  
   handleOnClick(){
     console.log('handleOnClick');
-    let connection = mysql.createConnection({
-      host     : 'localhost',
-      user     : 'root',
-      password : null,
-      database : 'db_teste'
-    });
+    let connection = mysql.createConnection(env.config_mysql);
 
     // connect to mysql
     connection.connect((err) => {
@@ -75,12 +71,7 @@ class HelloWorld extends React.Component {
   }
   handleSubmit(event) {
     console.log('handleSubmit');
-    let connection = mysql.createConnection({
-      host     : 'localhost',
-      user     : 'root',
-      password : null,
-      database : 'db_teste'
-    });
+    let connection = mysql.createConnection(env.config_mysql);
 
     // connect to mysql
     connection.connect((err) => {

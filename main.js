@@ -16,7 +16,7 @@ if ( process.defaultApp || /[\\/]electron-prebuilt[\\/]/.test(process.execPath) 
 }
 
 function createWindow() {
-  // startExpress();
+  startExpress();
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 1024, height: 768, show: false
@@ -45,7 +45,7 @@ function createWindow() {
     mainWindow.show();
     // Open the DevTools automatically if developing
     if ( dev ) {
-      mainWindow.webContents.openDevTools();
+      // mainWindow.webContents.openDevTools();
     }
   });
 
@@ -83,6 +83,7 @@ app.on('activate', () => {
 function startExpress () {
   const server = require('./server')
   const mysql = require('mysql')
+  const env = require('./.env')
 
   server.get('/login', (req, res) => {
     let resp = {
@@ -103,7 +104,7 @@ function startExpress () {
     AND ue.inventario_id = ?\
     AND l.password = ?\
     AND l.cpf = ?";
-    let connection = mysql.createConnection('mysql://root:password@localhost/arko_db_v2')
+    let connection = mysql.createConnection(env.config_mysql)
     connection.query(sql, [inventario_id,pass,cpf], (error, results, fields)=>{
       if(error) {
         console.log(error.code,error.fatal);
