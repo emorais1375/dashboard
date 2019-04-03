@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import mysql from 'mysql';
+import env from '../../../.env'
 import {
   Container,
   Row,
@@ -11,7 +12,7 @@ import {
   ButtonToolbar,
   Form
 } from 'react-bootstrap'
-const config_mysql = 'mysql://root:password@localhost/arko_db_v2';
+
 class Equipe extends Component {
   constructor(props) {
     super(props);
@@ -26,7 +27,7 @@ class Equipe extends Component {
     this.handleSubmit = this.handleSubmit.bind(this);  
   }
   componentDidMount() {
-    let connection = mysql.createConnection(config_mysql);
+    let connection = mysql.createConnection(env.config_mysql);
     let sql = "\
     SELECT DISTINCT l.usuario_id 'id', u.nome\
     FROM login l, usuario u\

@@ -132,7 +132,7 @@ function startExpress () {
     ignorar_zero_direita\
     FROM inventario\
     WHERE id = ?";
-    let connection = mysql.createConnection('mysql://root:password@localhost/arko_db_v2')
+    let connection = mysql.createConnection(env.config_mysql)
     connection.query(sql, [inventario_id], (error, results, fields)=>{
       if(error) {
         console.log(error.code,error.fatal);
@@ -153,7 +153,7 @@ function startExpress () {
     WHERE ue.inventario_id = ?\
     AND ue.usuario_id = ?\
     AND ue.enderecamento_id = e.id";
-    let connection = mysql.createConnection('mysql://root:password@localhost/arko_db_v2')
+    let connection = mysql.createConnection(env.config_mysql)
     connection.query(sql, [inventario_id, user_id], (error, results, fields)=>{
       if(error) {
         console.log(error.code,error.fatal);
@@ -187,7 +187,7 @@ function startExpress () {
     data,hora,enderecamento,cod_barra,\
     validade,fabricacao,lote,\
     itens_embalagem,marca,fornecedor) VALUES ?';
-    let connection = mysql.createConnection('mysql://root:password@localhost/arko_db_v2')
+    let connection = mysql.createConnection(env.config_mysql)
     connection.query(sql, [values], (error, results, fields)=>{
       if(error) {
         console.log(error.code,error.fatal);
