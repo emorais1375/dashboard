@@ -19,6 +19,8 @@ class Equipe extends Component {
     this.state = {
       tdArray: [
       ],
+      tdArray2: [
+      ],
       nomes: [],
       nome: 0, inicial: '', final: '', user_inv: []
     };
@@ -39,23 +41,59 @@ class Equipe extends Component {
         console.log(error.code,error.fatal);
         return;
       }
-      console.log(results);
       this.setState({
         nomes: results
       })
       sql = "\
-      select * \
-      from usuario_enderecamento \
-      where inventario_id = 1";
+      select ue.*, e.descricao, u.nome \
+      from usuario_enderecamento ue, enderecamento e, usuario u \
+      where ue.inventario_id = 1 AND ue.enderecamento_id = e.id\
+      AND ue.usuario_id = u.id";
       connection.query(sql, (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal);
           return;
         }
-        console.log(results);
+        let ends = [];
+        let ends_user = [];
+        let s = {}
+
+        if (results.length) {
+          results.map(end_atual=>{
+
+            console.log('entro')
+            if (ends.length) {
+              end_ant = ends[ends.length-1]; // ultimo enderecamento
+              if (end_atual.usuario_id === end_ant.usuario_id) {
+                if (parseInt(end_atual.descricao.split('-')[1]) !== parseInt(end_ant.descricao.split('-')[1]) + 1) {
+                  ends_user.push(ends);
+                  ends = [];
+                }
+                ends.push(end_atual);
+              } else {
+                ends_user.push(ends);
+                ends = [];
+                ends.push(end_atual);
+              }
+            }
+            else{
+              ends.push(end_atual);
+            }
+          });
+          ends_user.push(ends);
+        }
         this.setState({
-          // nomes: results
-        })
+          tdArray2: ends_user
+        });
+        if (ends_user.length) {
+          ends_user.map(end => {
+            if (end.length) {
+              console.log(end[0].nome)
+              console.log(end[0].descricao)
+              console.log(end[end.length-1].descricao)
+            }
+          });
+        }
         connection.end();
       });
     });
@@ -154,11 +192,11 @@ class Equipe extends Component {
                   </tr>
                 </thead>
                 <tbody>
-                    {this.state.tdArray.map((prop, key) => {
+                    {this.state.tdArray2.map((prop, key) => {
                       return <tr key={key}>
-                        {prop.map((prop, key) => {
-                          return <td key={key}>{prop}</td>;
-                        })}
+                        <td>{prop[0].nome}</td>
+                        <td>{prop[0].descricao}</td>
+                        <td>{prop[prop.length-1].descricao}</td>
                         <td>
                           <OverlayTrigger overlay={edit}>
                             <Button variant="info">
