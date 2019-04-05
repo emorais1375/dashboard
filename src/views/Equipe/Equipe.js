@@ -41,7 +41,6 @@ class Equipe extends Component {
         console.log(error.code,error.fatal);
         return;
       }
-      // console.log(results);
       this.setState({
         nomes: results
       })
@@ -55,24 +54,9 @@ class Equipe extends Component {
           console.log(error.code,error.fatal);
           return;
         }
-        // console.log('banco',results);
-        this.setState({
-          // nomes: results
-        })
-
-
-
-
-
-
-
-
-
-        // BEGIN
-
         let ends = [];
         let ends_user = [];
-        let end_ant = {}
+        let s = {}
 
         if (results.length) {
           results.map(end_atual=>{
@@ -82,10 +66,8 @@ class Equipe extends Component {
               end_ant = ends[ends.length-1]; // ultimo enderecamento
               if (end_atual.usuario_id === end_ant.usuario_id) {
                 if (parseInt(end_atual.descricao.split('-')[1]) !== parseInt(end_ant.descricao.split('-')[1]) + 1) {
-                  
                   ends_user.push(ends);
                   ends = [];
-                  // ends.push(end_atual);
                 }
                 ends.push(end_atual);
               } else {
@@ -93,20 +75,16 @@ class Equipe extends Component {
                 ends = [];
                 ends.push(end_atual);
               }
-
             }
             else{
               ends.push(end_atual);
             }
           });
-
           ends_user.push(ends);
-
         }
         this.setState({
           tdArray2: ends_user
         });
-        // console.log('end_user',ends_user)
         if (ends_user.length) {
           ends_user.map(end => {
             if (end.length) {
@@ -116,18 +94,6 @@ class Equipe extends Component {
             }
           });
         }
-
-        // END
-
-
-
-
-
-
-
-
-
-
         connection.end();
       });
     });
