@@ -28,7 +28,7 @@ class Enderecamento extends Component {
         });
 
         // Perform a query
-        let query = 'SELECT e.id, e.descricao, e.excecao FROM enderecamento e ';
+        let query = 'SELECT e.id, e.descricao, e.excecao FROM enderecamento e WHERE e.inventario_id = 1 LIMIT 10';
 
         connection.query(query, (error, results, fields) => {
             if(error){
