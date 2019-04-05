@@ -74,31 +74,35 @@ class Equipe extends Component {
         let ends_user = [];
         let end_ant = {}
 
-        results.map(end_atual=>{
-          if (ends.length) {
-            end_ant = ends[ends.length-1]; // ultimo enderecamento
-            if (end_atual.usuario_id === end_ant.usuario_id) {
-              if (parseInt(end_atual.descricao.split('-')[1]) !== parseInt(end_ant.descricao.split('-')[1]) + 1) {
-                
+        if (results.length) {
+          results.map(end_atual=>{
+
+            console.log('entro')
+            if (ends.length) {
+              end_ant = ends[ends.length-1]; // ultimo enderecamento
+              if (end_atual.usuario_id === end_ant.usuario_id) {
+                if (parseInt(end_atual.descricao.split('-')[1]) !== parseInt(end_ant.descricao.split('-')[1]) + 1) {
+                  
+                  ends_user.push(ends);
+                  ends = [];
+                  // ends.push(end_atual);
+                }
+                ends.push(end_atual);
+              } else {
                 ends_user.push(ends);
                 ends = [];
-                // ends.push(end_atual);
+                ends.push(end_atual);
               }
-              ends.push(end_atual);
-            } else {
-              ends_user.push(ends);
-              ends = [];
+
+            }
+            else{
               ends.push(end_atual);
             }
+          });
 
-          }
-          else{
-            ends.push(end_atual);
-          }
-        });
+          ends_user.push(ends);
 
-        ends_user.push(ends);
-        ends = [];
+        }
         this.setState({
           tdArray2: ends_user
         });
