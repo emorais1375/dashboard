@@ -29,6 +29,9 @@ class Equipe extends Component {
     this.handleSubmit = this.handleSubmit.bind(this);  
   }
   componentDidMount() {
+    this.atualizaLista();
+  }
+  atualizaLista() {
     let connection = mysql.createConnection(env.config_mysql);
     let sql = "\
     SELECT DISTINCT l.usuario_id 'id', u.nome\
@@ -56,7 +59,7 @@ class Equipe extends Component {
         }
         let ends = [];
         let ends_user = [];
-        let s = {}
+        let end_ant = {}
 
         if (results.length) {
           results.map(end_atual=>{
@@ -117,22 +120,57 @@ class Equipe extends Component {
   handleSubmit(ev) {
     console.log('handleSubmit()')
     ev.preventDefault();
-    if (this.state.inicial && this.state.final && this.state.nome) {
+    const inicial = this.state.inicial;
+    const final = this.state.final;
+    const nome = this.state.nome;
+    const usuario_id = this.state.nomes[nome-1].id;
+    const inventario_id = 1;
+    let enderecamentos = [];
+
+    if (inicial && final && nome) {
       console.log(
-        this.state.nome,
-        this.state.inicial,
-        this.state.final
+        usuario_id,
+        inicial,
+        final
       );
-      let tdArray = this.state.tdArray;
-      tdArray.push([
-        this.state.nomes[this.state.nome-1].nome,
-        this.state.inicial,
-        this.state.final
-      ]);
-      this.setState({
-        tdArray: tdArray
-      })
-      this.handleCancel();
+      let connection = mysql.createConnection(env.config_mysql);
+      let sql = "\
+      select id from enderecamento\
+      where inventario_id = 1\
+      AND descricao >= ? and descricao <= ?";
+      connection.query(sql, [inicial, final], (error, results, fields)=>{
+        if(error) {
+          console.log(error.code, error.fatal);
+          return;
+        }
+        console.log('id', results);
+        results.map(result => {
+          enderecamentos.push([
+            inventario_id,
+            usuario_id,
+            result.id
+          ]);
+          console.log('end:'+result.id)
+          console.log('use:'+usuario_id)
+          console.log('inv:'+inventario_id)
+        })
+        if (enderecamentos.length) {
+          sql = "\
+          INSERT INTO usuario_enderecamento (inventario_id, usuario_id, enderecamento_id)\
+          VALUES ?";
+          connection.query(sql, [enderecamentos], (error, results, fields)=>{
+            if(error) {
+              console.log('Puts:',error.code, error.fatal);
+              return;
+            }
+            this.atualizaLista();
+            connection.end();
+          });  
+        }
+        else{
+          connection.end();
+        }
+      });
     }
   }
   handleCancel() {
