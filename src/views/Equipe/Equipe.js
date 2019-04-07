@@ -147,9 +147,12 @@ class Equipe extends Component {
       );
       let connection = mysql.createConnection(env.config_mysql);
       let sql = "\
-      select id from enderecamento\
-      where inventario_id = 1\
-      AND descricao >= ? and descricao <= ?";
+      SELECT id, descricao  FROM enderecamento\
+      WHERE inventario_id=1 AND id >= (\
+      SELECT id FROM enderecamento\
+      WHERE inventario_id=1 AND descricao=?)\
+      AND id <= ( SELECT id FROM enderecamento\
+      WHERE inventario_id=1  AND descricao=?)";
       connection.query(sql, [inicial, final], (error, results, fields)=>{
         if(error) {
           console.log(error.code, error.fatal);
