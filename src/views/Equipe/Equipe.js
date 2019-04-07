@@ -102,12 +102,24 @@ class Equipe extends Component {
     });
   }
   alerta(prop, key){
-    console.log('aleta ', key, prop)
-    let tdArray = this.state.tdArray;
-    tdArray.splice(key, 1)
-    this.setState({
-      tdArray: tdArray
-    })
+    let enderecamentos = [];
+    prop.map(p=>{
+      enderecamentos.push([p.id]);
+    });
+    console.log(enderecamentos)
+    if (enderecamentos) {
+      let connection = mysql.createConnection(env.config_mysql);
+      let sql = "\
+      DELETE FROM usuario_enderecamento WHERE id IN (?)";
+      connection.query(sql, [enderecamentos], (error, results, fields)=>{
+        if(error) {
+          console.log(error.code,error.fatal);
+          return;
+        }
+        this.atualizaLista();
+        connection.end();
+      });
+    }
   }
   handleChange(ev) {
     const target = ev.target;
