@@ -104,6 +104,9 @@ class Header extends Component {
             <Nav.Link eventKey={5} href="#Auditoria">
               Auditoria
             </Nav.Link>
+            <Nav.Link eventKey={6} href="#Login">
+              Login
+            </Nav.Link>
           </Nav>
           <Button variant="outline-info">Sair</Button>
         </Navbar.Collapse>
