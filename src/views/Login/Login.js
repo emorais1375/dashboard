@@ -1,4 +1,6 @@
 import React, { Component } from "react";
+import mysql from 'mysql';
+import env from '../../../.env'
 import MaskedFormControl from 'react-bootstrap-maskedinput'
 import {
     Button,
@@ -10,14 +12,12 @@ class Login extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            cpf:'', password:'',validated: false 
+            cpf:'', password:'',usuario:[]
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);  
       }
     handleChange(event) {
-        console.log(event.target.value)
-        console.log(event.target.name)
         this.setState({
             [event.target.name]: event.target.value
           });
@@ -30,6 +30,46 @@ class Login extends Component {
             this.state.cpf,
             this.state.password
           );
+          let cpf = this.state.cpf;
+          let pass = this.state.password;
+          let connection = mysql.createConnection(env.config_mysql);
+          // connect to mysql
+          connection.connect((err) => {
+          // in case of error
+          if(err){
+              console.log(err.code);
+              console.log(err.fatal);
+          }
+          console.log('conectou!');
+          });
+  
+          // Perform a query
+          let query = 'SELECT l.cpf,l.password FROM login l WHERE l.cpf = ? AND l.password = ?';
+  
+          connection.query(query,[cpf,pass], (error, results, fields) => {
+              if(error){
+                  console.log("An error ocurred performing the query.");
+                  console.log(error);
+                  return;
+              }
+              this.setState({
+                usuario: results
+                });
+              if(results.length){
+                console.log(results);
+                console.log("Encontrado");
+              }else{
+                console.log(results);
+                console.log('Nao encontrado');
+              }
+              
+             
+              console.log("Query succesfully executed");
+          });
+          // Close the connection
+          connection.end( () => {
+              // The connection has been closed
+          });
     }
     render() {
         return (
