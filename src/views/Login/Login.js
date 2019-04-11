@@ -69,7 +69,7 @@ class Login extends Component {
                     console.log("Query 2 succesfully executed");
                     console.log("Vc tem um inventario");
                     console.log(results2);
-                    this.props.history.push("../views/Dashboard/Dashboard");                   
+                    this.props.history.push("/dashboard");                   
                 });
                 // Close the connection
                 connection.end( () => {});
