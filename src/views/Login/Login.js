@@ -24,7 +24,7 @@ class Login extends Component {
 
 
     }
-    handleSubmit(event) {
+    handleSubmit (event) {
         event.preventDefault();
         console.log(
             this.state.cpf,
@@ -34,42 +34,55 @@ class Login extends Component {
           let pass = this.state.password;
           let connection = mysql.createConnection(env.config_mysql);
           // connect to mysql
-          connection.connect((err) => {
-          // in case of error
-          if(err){
-              console.log(err.code);
-              console.log(err.fatal);
-          }
-          console.log('conectou!');
-          });
+        connection.connect((err) => {
+            // in case of error
+            if(err){
+                console.log(err.code);
+                console.log(err.fatal);
+            }
+            console.log('conectou!');
+        });
   
           // Perform a query
-          let query = 'SELECT l.cpf,l.password FROM login l WHERE l.cpf = ? AND l.password = ?';
+        let query = 'SELECT l.cpf,l.password, l.usuario_id FROM login l WHERE l.cpf = ? AND l.password = ?';
   
-          connection.query(query,[cpf,pass], (error, results, fields) => {
-              if(error){
-                  console.log("An error ocurred performing the query.");
-                  console.log(error);
-                  return;
-              }
-              this.setState({
+        connection.query(query,[cpf,pass], (error, results, fields) => {
+            if(error){
+                console.log("An error ocurred performing the query.");
+                console.log(error);
+                return;
+            }
+            this.setState({
                 usuario: results
-                });
-              if(results.length){
+            });
+            if(results.length){
                 console.log(results);
                 console.log("Encontrado");
-              }else{
+                let query2 = 'SELECT i.id FROM inventario i WHERE i.usuario_resp_cadastro_inventario_id = ?';
+            
+                connection.query(query2,[this.state.usuario[0].usuario_id], (error, results2, fields) => {
+                    if(error){
+                        console.log("An error ocurred performing the query.");
+                        console.log(error);
+                        return;
+                    }                                   
+                    console.log("Query 2 succesfully executed");
+                    console.log("Vc tem um inventario");
+                    console.log(results2);
+                    this.props.history.push("../views/Dashboard/Dashboard");                   
+                });
+                // Close the connection
+                connection.end( () => {});
+            }else{
                 console.log(results);
                 console.log('Nao encontrado');
-              }
-              
-             
-              console.log("Query succesfully executed");
+                // Close the connection
+                connection.end( () => {});
+            }        
+            
+            console.log("Query 1 succesfully executed");
           });
-          // Close the connection
-          connection.end( () => {
-              // The connection has been closed
-          });
+         
     }
     render() {
         return (
