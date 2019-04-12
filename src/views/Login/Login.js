@@ -21,8 +21,6 @@ class Login extends Component {
         this.setState({
             [event.target.name]: event.target.value
           });
-
-
     }
     handleSubmit (event) {
         event.preventDefault();
@@ -69,7 +67,8 @@ class Login extends Component {
                     console.log("Query 2 succesfully executed");
                     console.log("Vc tem um inventario");
                     console.log(results2);
-                    this.props.history.push("/dashboard");                   
+                    //this.props.history.push("/dashboard");  
+                    <Redirect to="/dashboard"/>               
                 });
                 // Close the connection
                 connection.end( () => {});
