@@ -35,6 +35,7 @@
     "express": "^4.16.4",
     "mysql": "^2.16.0",
     "react-bootstrap": "^1.0.0-beta.6",
+    "react-bootstrap-maskedinput": "^0.4.0",
     "react-chartist": "^0.13.3",
     "react-router-dom": "4.2.2"
   },
