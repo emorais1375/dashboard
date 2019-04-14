@@ -22,7 +22,8 @@ class Equipe extends Component {
       tdArray2: [
       ],
       nomes: [],
-      nome: 0, inicial: '', final: '', user_inv: []
+      nome: 0, inicial: '', final: '', user_inv: [],
+      inventario_id: 1
     };
     this.handleCancel = this.handleCancel.bind(this);
     this.handleChange = this.handleChange.bind(this);
@@ -33,6 +34,7 @@ class Equipe extends Component {
   }
   atualizaLista() {
     let connection = mysql.createConnection(env.config_mysql);
+    let inventario_id = this.state.inventario_id;
     let sql = "\
     SELECT DISTINCT l.usuario_id 'id', u.nome\
     FROM login l, usuario u\
@@ -48,10 +50,10 @@ class Equipe extends Component {
       sql = "\
       select ue.*, e.descricao, u.nome \
       from usuario_enderecamento ue, enderecamento e, usuario u \
-      where ue.inventario_id = 1 AND ue.enderecamento_id = e.id\
+      where ue.inventario_id = ? AND ue.enderecamento_id = e.id\
       AND ue.usuario_id = u.id\
       ORDER BY e.descricao";
-      connection.query(sql, (error, results, fields)=>{
+      connection.query(sql, [inventario_id], (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal);
           return;
@@ -135,7 +137,7 @@ class Equipe extends Component {
     const final = this.state.final;
     const nome = this.state.nome;
     const usuario_id = this.state.nomes[nome-1].id;
-    const inventario_id = 1;
+    let inventario_id = this.state.inventario_id;
     let enderecamentos = [];
 
     if (inicial && final && nome) {
@@ -147,12 +149,12 @@ class Equipe extends Component {
       let connection = mysql.createConnection(env.config_mysql);
       let sql = "\
       SELECT id, descricao  FROM enderecamento\
-      WHERE inventario_id=1 AND id >= (\
+      WHERE inventario_id=? AND id >= (\
       SELECT id FROM enderecamento\
-      WHERE inventario_id=1 AND descricao=?)\
+      WHERE inventario_id=? AND descricao=?)\
       AND id <= ( SELECT id FROM enderecamento\
-      WHERE inventario_id=1  AND descricao=?)";
-      connection.query(sql, [inicial, final], (error, results, fields)=>{
+      WHERE inventario_id=?  AND descricao=?)";
+      connection.query(sql, [inventario_id, inventario_id, inicial, inventario_id, final], (error, results, fields)=>{
         if(error) {
           console.log(error.code, error.fatal);
           return;
@@ -178,6 +180,7 @@ class Equipe extends Component {
               return;
             }
             this.atualizaLista();
+            this.handleCancel();
             connection.end();
           });  
         }
