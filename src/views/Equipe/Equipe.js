@@ -41,18 +41,28 @@ class Equipe extends Component {
     let connection = mysql.createConnection(env.config_mysql);
     let inventario_id = this.state.inventario_id;
     let sql = "\
-    select min(descricao) 'desc'\
+    select descricao 'desc'\
     from enderecamento\
-    where inventario_id = ?";
-    connection.query(sql, [inventario_id], (error, results, fields)=>{
+    where id IN (\
+    ( select min(id) from enderecamento where inventario_id=?),\
+    ( select max(id) from enderecamento where inventario_id=?))";
+    connection.query(sql, [inventario_id, inventario_id], (error, results, fields)=>{
       if(error) {
         console.log(error.code,error.fatal);
         return;
       }
-      if (results.length) {
+      if (results.length === 2) {
         const descricao = results[0].desc.split('-')[0];
+        const inicial_end = results[0].desc.split('-')[1];
+        const final_end = results[1].desc.split('-')[1];
         console.log(descricao);
-        this.setState({descricao})
+        this.setState({descricao, inicial_end, final_end});
+      }else if (results.length) {
+        const descricao = results[0].desc.split('-')[0];
+        const inicial_end = results[0].desc.split('-')[1];
+        const final_end = results[0].desc.split('-')[1];
+        console.log(descricao);
+        this.setState({descricao, inicial_end, final_end});
       }
       connection.end();
     });
@@ -76,8 +86,7 @@ class Equipe extends Component {
       select ue.*, e.descricao, u.nome \
       from usuario_enderecamento ue, enderecamento e, usuario u \
       where ue.inventario_id = ? AND ue.enderecamento_id = e.id\
-      AND ue.usuario_id = u.id\
-      ORDER BY e.descricao";
+      AND ue.usuario_id = u.id";
       connection.query(sql, [inventario_id], (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal);
