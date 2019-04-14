@@ -10,7 +10,9 @@ import {
   Tooltip,
   Button,
   ButtonToolbar,
-  Form
+  Form,
+  Badge,
+  InputGroup
 } from 'react-bootstrap'
 
 class Equipe extends Component {
@@ -23,14 +25,37 @@ class Equipe extends Component {
       ],
       nomes: [],
       nome: 0, inicial: '', final: '', user_inv: [],
-      inventario_id: 1
+      inventario_id: 1,
+      inicial_end: '', final_end: '',
+      descricao: ''
     };
     this.handleCancel = this.handleCancel.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);  
   }
   componentDidMount() {
+    this.getDescricao();
     this.atualizaLista();
+  }
+  getDescricao() {
+    let connection = mysql.createConnection(env.config_mysql);
+    let inventario_id = this.state.inventario_id;
+    let sql = "\
+    select min(descricao) 'desc'\
+    from enderecamento\
+    where inventario_id = ?";
+    connection.query(sql, [inventario_id], (error, results, fields)=>{
+      if(error) {
+        console.log(error.code,error.fatal);
+        return;
+      }
+      if (results.length) {
+        const descricao = results[0].desc.split('-')[0];
+        console.log(descricao);
+        this.setState({descricao})
+      }
+      connection.end();
+    });
   }
   atualizaLista() {
     let connection = mysql.createConnection(env.config_mysql);
@@ -133,14 +158,16 @@ class Equipe extends Component {
   handleSubmit(ev) {
     console.log('handleSubmit()')
     ev.preventDefault();
-    const inicial = this.state.inicial;
-    const final = this.state.final;
+    let inicial = this.state.inicial;
+    let final = this.state.final;
     const nome = this.state.nome;
-    const usuario_id = this.state.nomes[nome-1].id;
     let inventario_id = this.state.inventario_id;
     let enderecamentos = [];
 
     if (inicial && final && nome) {
+      const usuario_id = this.state.nomes[nome-1].id;
+      inicial = this.state.descricao + '-' +inicial;
+      final = this.state.descricao + '-' +final;
       console.log(
         usuario_id,
         inicial,
@@ -201,7 +228,6 @@ class Equipe extends Component {
   }
   render() {
     const thArray = ["Name", "Inicial", "Final","Actions"];
-    const edit = <Tooltip id="edit_tooltip">Edit Task</Tooltip>;
     const remove = <Tooltip id="remove_tooltip">Remove</Tooltip>;
     return (
     <div className="content">
@@ -222,14 +248,24 @@ class Equipe extends Component {
                 </Form.Group>
 
                   <Form.Group as={Col} md="3">
-                      <Form.Label>Inicial</Form.Label>
-                      <Form.Control placeholder="Inicial" type="text" name="inicial" onChange={this.handleChange} value={this.state.inicial}/>
+                    <Form.Label>Inicial <Badge variant="secondary">{this.state.inicial_end}</Badge></Form.Label>
+                    <InputGroup>
+                      <InputGroup.Prepend>
+                        <InputGroup.Text>{this.state.descricao}-</InputGroup.Text>
+                      </InputGroup.Prepend>
+                      <Form.Control placeholder="Inicial" type="number" name="inicial" onChange={this.handleChange} value={this.state.inicial}/>
+                    </InputGroup>
                   </Form.Group>
 
                   <Form.Group as={Col} md="3">
-                  <Form.Label>Final</Form.Label>
-                  <Form.Control placeholder="Final" type="text" name="final" onChange={this.handleChange} value={this.state.final}/>
-              </Form.Group>
+                    <Form.Label>Final <Badge variant="secondary">{this.state.final_end}</Badge></Form.Label>
+                    <InputGroup>
+                      <InputGroup.Prepend>
+                        <InputGroup.Text>{this.state.descricao}-</InputGroup.Text>
+                      </InputGroup.Prepend>
+                      <Form.Control placeholder="Final" type="number" name="final" onChange={this.handleChange} value={this.state.final}/>
+                    </InputGroup>
+                  </Form.Group>
                 </Form.Row>
                 <ButtonToolbar>
                 <Button as="input" variant="info" type="submit" value="Salvar"/>
@@ -238,7 +274,7 @@ class Equipe extends Component {
               </Form>
             </Col>
             <Col md={12}>
-              <Table striped>
+              <Table striped size="sm" responsive>
                 <thead>
                   <tr>
                     {thArray.map((prop, key) => {
@@ -253,11 +289,6 @@ class Equipe extends Component {
                         <td>{prop[0].descricao}</td>
                         <td>{prop[prop.length-1].descricao}</td>
                         <td>
-                          <OverlayTrigger overlay={edit}>
-                            <Button variant="info">
-                              <i className="fa fa-times" />
-                            </Button>
-                          </OverlayTrigger>
                           <OverlayTrigger overlay={remove}>
                             <Button variant="danger" onClick={() => this.alerta(prop, key)}>
                               <i className="fa fa-times" />
