@@ -42,7 +42,7 @@ function createWindow() {
 
   // Don't show until we are ready and loaded
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+    // mainWindow.show();
     // Open the DevTools automatically if developing
     if ( dev ) {
       // mainWindow.webContents.openDevTools();
@@ -84,90 +84,134 @@ function startExpress () {
   const server = require('./server')
   const mysql = require('mysql')
   const env = require('./.env')
+  const inventario_id = 1
 
   server.get('/login', (req, res) => {
-    let resp = {
-      login: -1,
-      id_usuario: null,
-      usuario: null
+    let cpf = req.query.cpf || ''
+    const pass = req.query.password || ''
+    console.log('GET /login?cpf='+cpf+'&password='+pass)
+    if (cpf.length === 11 && pass) {
+      cpf = cpf.split('')
+      cpf.splice( 3, 0, '.')
+      cpf.splice( 7, 0, '.')
+      cpf.splice(11, 0, '-')
+      cpf = cpf.join('')
+      let connection = mysql.createConnection(env.config_mysql)
+      let query = `
+        SELECT DISTINCT 
+          l.usuario_id, l.username
+        FROM 
+          login l, usuario u, usuario_enderecamento ue
+        WHERE 
+          l.login_status = 'ATIVO'
+        AND 
+          l.usuario_id = u.id
+        AND 
+          u.cargo = 'INVENTARIANTE'
+        AND 
+          l.usuario_id = ue.usuario_id
+        AND 
+          ue.inventario_id = ?
+        AND 
+          l.password = ?
+        AND 
+          l.cpf = ?
+      `
+      connection.query(query, [inventario_id, pass, cpf], (error, results, fields)=>{
+        if(error) {
+          console.log(error.code,error.fatal)
+          res.status(400).json({error:error.code})
+          return
+        }
+        if (results.length) {
+          let newresults = results[0]
+          newresults['login'] = 0
+          res.json(newresults)
+        }
+        else {
+          console.log('CPF ou Senha inválida!')
+          res.json({usuario_id: null,username: null,login: -1})
+        }
+        connection.end()
+      })
+    } else {
+      console.log('CPF ou Senha inválida!')
+      res.json({usuario_id: null,username: null,login: -1})
     }
-    let cpf = req.query.cpf;
-    let pass = req.query.password;
-    let inventario_id = 1;
-    let sql = "\
-    SELECT DISTINCT l.usuario_id, l.username\
-    FROM login l, usuario u, usuario_enderecamento ue\
-    WHERE l.login_status = 'ATIVO'\
-    AND l.usuario_id = u.id\
-    AND u.cargo = 'INVENTARIANTE'\
-    AND l.usuario_id = ue.usuario_id\
-    AND ue.inventario_id = ?\
-    AND l.password = ?\
-    AND l.cpf = ?";
-    let connection = mysql.createConnection(env.config_mysql)
-    connection.query(sql, [inventario_id,pass,cpf], (error, results, fields)=>{
-      if(error) {
-        console.log(error.code,error.fatal);
-        res.status(400).json({error:error.code})
-        return;
-      }
-      if (results.length) {
-        let newresults = results[0]
-        newresults['login'] = 0
-        res.json(newresults);
-      }
-      else {
-        res.status(401).json(resp);
-      }
-      connection.end();
-      console.log('GET /login');
-    });
   })
+
   server.get('/inventario', (req, res) => {
-    let inventario_id = 1;
-    let sql = "\
-    SELECT tipo_inventario, validade,\
-    fabricacao, lote, itens_embalagem,\
-    marca, fornecedor, ignorar_zero_esq,\
-    ignorar_zero_direita\
-    FROM inventario\
-    WHERE id = ?";
+    console.log('GET /inventario')
     let connection = mysql.createConnection(env.config_mysql)
-    connection.query(sql, [inventario_id], (error, results, fields)=>{
+    let query = `
+      SELECT 
+        tipo_inventario, validade,
+        fabricacao, lote, itens_embalagem,
+        fornecedor, ignorar_zero_esq,
+        ignorar_zero_direita, marca
+      FROM inventario
+      WHERE id = ?
+    `
+    connection.query(query, [inventario_id], (error, results, fields)=>{
       if(error) {
-        console.log(error.code,error.fatal);
+        console.log(error.code,error.fatal)
         res.status(400).json({error:error.code})
-        return;
+        return
       }
-      res.json(results[0]);
-      connection.end();
-      console.log('GET /inventario');
-    });
+      res.json(results.length ? results[0] : {
+        "tipo_inventario": null,
+        "validade": null,
+        "fabricacao": null,
+        "lote": null,
+        "itens_embalagem": null,
+        "marca": null,
+        "fornecedor": null,
+        "ignorar_zero_esq": null,
+        "ignorar_zero_direita": null
+      })
+      connection.end()
+    })
   })
+
   server.get('/enderecamento', (req, res) => {
-    let user_id = req.query.usuario_id;
-    let inventario_id = 1;
-    let sql = "\
-    SELECT ue.enderecamento_id, e.descricao\
-    FROM usuario_enderecamento ue, enderecamento e\
-    WHERE ue.inventario_id = ?\
-    AND ue.usuario_id = ?\
-    AND ue.enderecamento_id = e.id";
-    let connection = mysql.createConnection(env.config_mysql)
-    connection.query(sql, [inventario_id, user_id], (error, results, fields)=>{
-      if(error) {
-        console.log(error.code,error.fatal);
-        res.status(400).json({error:error.code})
-        return;
-      }
-      res.json(results);
-      connection.end();
-      console.log('GET /enderecamento');
-    });
+    const { usuario_id } = req.query
+    console.log('GET /enderecamento?usuario_id='+usuario_id)
+    if (usuario_id) {
+      let connection = mysql.createConnection(env.config_mysql)
+      let query = `
+        SELECT 
+          ue.enderecamento_id, 
+          e.descricao,
+          e.excecao
+        FROM 
+          usuario_enderecamento ue, 
+          enderecamento e
+        WHERE 
+          ue.inventario_id = ?
+        AND 
+          ue.usuario_id = ?
+        AND 
+          ue.enderecamento_id = e.id
+      `
+      connection.query(query, [inventario_id, usuario_id], (error, results, fields)=>{
+        if(error) {
+          console.log(error.code,error.fatal)
+          res.status(400).json({error:error.code})
+          return
+        }
+        res.json(results)
+        connection.end()
+      });
+    } else {
+      console.log('usuario_id inválido!')
+      res.json([])
+    }
   })
+
   server.post('/coleta', (req, res) => {
-    let coletas  = req.body;
-    let values = [];
+    console.log('POST /coleta')
+    const coletas  = req.body || []
+    let values = []
 
     for(var i=0; i< coletas.length; i++)
       values.push([
@@ -182,26 +226,51 @@ function startExpress () {
         coletas[i].itens_embalagem,
         coletas[i].marca,
         coletas[i].fornecedor
-      ]);
-    let sql = 'INSERT INTO coleta (usuario_id,\
-    data,hora,enderecamento,cod_barra,\
-    validade,fabricacao,lote,\
-    itens_embalagem,marca,fornecedor) VALUES ?';
+      ])
+
     let connection = mysql.createConnection(env.config_mysql)
-    connection.query(sql, [values], (error, results, fields)=>{
+    let query = `
+      INSERT INTO 
+        coleta (usuario_id, data, hora, enderecamento,
+                cod_barra, validade, fabricacao,
+                lote, itens_embalagem, marca, fornecedor)
+      VALUES ?
+    `
+    connection.query(query, [values], (error, results, fields)=>{
       if(error) {
-        console.log(error.code,error.fatal);
+        console.log(error.code,error.fatal)
         res.status(400).json({error:error.code})
-        return;
+        return
       }
-      res.status(201).json({mensagem:'coleta criada!'});
-      connection.end();
-      console.log('POST /coleta');
-    });
+      res.json()
+      connection.end()
+    })
   })
+
+  server.get('/base', (req, res) => {
+    console.log('GET /base')
+    let connection = mysql.createConnection(env.config_mysql)
+    let query = `
+      SELECT 
+        cod_barra, descricao_item
+      FROM 
+        base
+      WHERE
+        inventario_id = ?
+    `
+    connection.query(query, [inventario_id], (error, results, fields)=>{
+      if(error) {
+        console.log(error.code,error.fatal)
+        res.status(400).json({error:error.code})
+        return
+      }
+      res.json(results)
+      connection.end()
+    })
+  })
+
   server.get('/', (req, res) => {
-    // console.log(req.body)
     console.log("GET /")
-    return res.send({message:'ok'})
+    res.json({message:'Servidor funcionando!'})
   })
 }
