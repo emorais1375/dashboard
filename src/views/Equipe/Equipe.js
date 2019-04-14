@@ -44,14 +44,13 @@ class Equipe extends Component {
         console.log(error.code,error.fatal);
         return;
       }
-      this.setState({
-        nomes: results
-      })
+      this.setState({nomes: results})
       sql = "\
       select ue.*, e.descricao, u.nome \
       from usuario_enderecamento ue, enderecamento e, usuario u \
       where ue.inventario_id = 1 AND ue.enderecamento_id = e.id\
-      AND ue.usuario_id = u.id";
+      AND ue.usuario_id = u.id\
+      ORDER BY e.descricao";
       connection.query(sql, (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal);
