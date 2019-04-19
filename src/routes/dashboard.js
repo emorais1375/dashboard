@@ -6,6 +6,7 @@ import Auditoria from "../views/Auditoria/Auditoria";
 import Enderecamento from "../views/Enderecamento/Enderecamento";
 import Login from "../views/Login/Login";
 import Inventario from "../views/Inventario/Inventario";
+import Divergencia from "../views/Divergencia/Divergencia";
 
 import HelloWorld from "../components/App/HelloWorld";
 
@@ -57,6 +58,12 @@ const dashboardRoutes = [
     name: "Inventario",
     // icon: "pe-7s-graph",
     component: Inventario
+  },
+  {
+    path: "/divergencia",
+    name: "Divergencia",
+    // icon: "pe-7s-graph",
+    component: Divergencia
   },
   // {
   //   path: "/user",

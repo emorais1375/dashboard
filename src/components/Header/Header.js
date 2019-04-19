@@ -110,6 +110,9 @@ class Header extends Component {
             <Nav.Link eventKey={7} href="#Inventario">
               Inventario
             </Nav.Link>
+            <Nav.Link eventKey={8} href="#Divergencia">
+              Divergencia
+            </Nav.Link>
           </Nav>
           <Button variant="outline-info">Sair</Button>
         </Navbar.Collapse>
