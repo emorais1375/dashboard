@@ -12,8 +12,8 @@ class Inventario extends Component {
 	constructor(props){
     super(props);
     this.state = {
-    	usuario_coordenador_id: 11,
-    	nome: 'Jujuba',
+    	usuario_coordenador_id: 10,
+    	nome: 'coordenador-usu',
     	inventarios: []
     }
     if(props.location.state){
