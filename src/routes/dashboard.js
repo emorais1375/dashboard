@@ -5,6 +5,7 @@ import Confronto from "../views/Confronto/Confron";
 import Auditoria from "../views/Auditoria/Auditoria";
 import Enderecamento from "../views/Enderecamento/Enderecamento";
 import Login from "../views/Login/Login";
+import Inventario from "../views/Inventario/Inventario";
 
 import HelloWorld from "../components/App/HelloWorld";
 
@@ -50,6 +51,12 @@ const dashboardRoutes = [
     name: "Login",
     // icon: "pe-7s-graph",
     component: Login
+  },
+  {
+    path: "/inventario",
+    name: "Inventario",
+    // icon: "pe-7s-graph",
+    component: Inventario
   },
   // {
   //   path: "/user",
