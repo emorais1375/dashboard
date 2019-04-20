@@ -1,12 +1,8 @@
 import React, { Component } from "react";
 import mysql from 'mysql';
 import env from '../../../.env'
-// import ChartistGraph from "react-chartist";
 import { Container, Row, Col, Table, Button } from "react-bootstrap";
-
 import { Card } from "../../components/Card/Card";
-
-const thArray = ["ID", "Código", "Qtde"];
 
 class Dashboard extends Component {
   constructor(props) {
@@ -15,6 +11,7 @@ class Dashboard extends Component {
       inventario_id: localStorage.getItem('inv_id') || '',
       inventario: [],
       base: [],
+      coleta: [],
       isPaused: true,
       horas: 0, minutos: 0, segundos: 0,
       isEnable: false, 
@@ -46,7 +43,12 @@ class Dashboard extends Component {
     
   }
   startClock(){
-    this.interval = setInterval(() => {if(!this.state.isPaused) this.tick()}, 1000);
+    this.interval = setInterval(
+      () => {
+        if(!this.state.isPaused) 
+          this.tick()
+      }, 1000
+    );
   }
   playClock(){
 
@@ -90,6 +92,7 @@ class Dashboard extends Component {
   }
   componentDidMount() {
     this.startClock();
+    this.lerColeta();
     let {inventario_id} = this.state;
     if (inventario_id) {
       let connection = mysql.createConnection(env.config_mysql);
@@ -114,25 +117,37 @@ class Dashboard extends Component {
   componentWillUnmount() {
     clearInterval(this.interval);
   }
-  // createLegend(json) {
-  //   var legend = [];
-  //   for (var i = 0; i < json["names"].length; i++) {
-  //     var type = "fa fa-circle text-" + json["types"][i];
-  //     legend.push(<i className={type} key={i} />);
-  //     legend.push(" ");
-  //     legend.push(json["names"][i]);
-  //   }
-  //   return legend;
-  // }
+  lerColeta(){
+    let {inventario_id} = this.state;
+    if (inventario_id) {
+      let connection = mysql.createConnection(env.config_mysql);
+      let query = `
+        SELECT cod_barra, count(cod_barra) AS 'qtd' 
+        FROM coleta 
+        GROUP BY cod_barra;
+      `
+      connection.query(query ,(error, coleta, fields) => {
+        if(error){
+            console.log(error.code,error.fatal)
+            return
+        }
+        this.setState({ coleta })
+        connection.end();
+      })
+    } else {
+      console.log('Vazio!')
+    }
+  }
   render() {
+    const { base, coleta, timeFormat } = this.state
     return (
       <div className="content">
         <h1>Dashboard</h1>
         <Container fluid>
           <Row>
             <Col lg={4}  md={6}>
-              <h6>{this.state.timeFormat}</h6>
-              <Button variant="info" onClick={this.playClock}>Play</Button>
+              <h6>{timeFormat}</h6>
+              <Button variant="info" disabled={false?true:false} onClick={this.playClock}>Play</Button>
               <Button variant="info" onClick={this.pauseClock}>Pause</Button>
               <Button variant="info" onClick={this.stopClock}>Stop</Button>
             </Col>
@@ -140,26 +155,22 @@ class Dashboard extends Component {
           <Row>
             <Col md={6}>
               <Card 
-                // plain
                 title="Inventário"
-                // category="Here is a subtitle for this table"
                 ctTableFullWidth
                 ctTableResponsive
                 content={
                   <Table striped>
                     <thead>
                       <tr>
-                        {thArray.map((prop, key) => {
-                          return <th key={key}>{prop}</th>;
-                        })}
+                        <th>Código</th>
+                        <th>Quantidade</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {this.state.inventario.map((prop, key) => {
+                      {coleta.map((prop, key) => {
                         return (
                           <tr key={key}>
-                            <td>{prop.id}</td>
-                            <td>{prop.barcode}</td>
+                            <td>{prop.cod_barra}</td>
                             <td>{prop.qtd}</td>
                           </tr>
                         );
@@ -167,13 +178,11 @@ class Dashboard extends Component {
                     </tbody>
                   </Table>
                 }
-                
               />
             </Col>
             <Col md={6}>
               <Card
                 title="Base de dados"
-                // category="Here is a subtitle for this table"
                 ctTableFullWidth
                 ctTableResponsive
                 content={
@@ -185,7 +194,7 @@ class Dashboard extends Component {
                       </tr>
                     </thead>
                     <tbody>
-                      {this.state.base.map((prop, key) => {
+                      {base.map((prop, key) => {
                         return (
                           <tr key={key}>
                             <td>{prop.cod_barra}</td>
@@ -200,130 +209,6 @@ class Dashboard extends Component {
             </Col>
           </Row>
         </Container>
-        {/* <Grid fluid>
-          <Row>
-            <Col lg={3} sm={6}>
-              <StatsCard
-                bigIcon={<i className="pe-7s-server text-warning" />}
-                statsText="Capacity"
-                statsValue="105GB"
-                statsIcon={<i className="fa fa-refresh" />}
-                statsIconText="Updated now"
-              />
-            </Col>
-            <Col lg={3} sm={6}>
-              <StatsCard
-                bigIcon={<i className="pe-7s-wallet text-success" />}
-                statsText="Revenue"
-                statsValue="$1,345"
-                statsIcon={<i className="fa fa-calendar-o" />}
-                statsIconText="Last day"
-              />
-            </Col>
-            <Col lg={3} sm={6}>
-              <StatsCard
-                bigIcon={<i className="pe-7s-graph1 text-danger" />}
-                statsText="Errors"
-                statsValue="23"
-                statsIcon={<i className="fa fa-clock-o" />}
-                statsIconText="In the last hour"
-              />
-            </Col>
-            <Col lg={3} sm={6}>
-              <StatsCard
-                bigIcon={<i className="fa fa-twitter text-info" />}
-                statsText="Followers"
-                statsValue="+45"
-                statsIcon={<i className="fa fa-refresh" />}
-                statsIconText="Updated now"
-              />
-            </Col>
-          </Row>
-          <Row>
-            <Col md={8}>
-              <Card
-                statsIcon="fa fa-history"
-                id="chartHours"
-                title="Users Behavior"
-                category="24 Hours performance"
-                stats="Updated 3 minutes ago"
-                content={
-                  <div className="ct-chart">
-                    <ChartistGraph
-                      data={dataSales}
-                      type="Line"
-                      options={optionsSales}
-                      responsiveOptions={responsiveSales}
-                    />
-                  </div>
-                }
-                legend={
-                  <div className="legend">{this.createLegend(legendSales)}</div>
-                }
-              />
-            </Col>
-            <Col md={4}>
-              <Card
-                statsIcon="fa fa-clock-o"
-                title="Email Statistics"
-                category="Last Campaign Performance"
-                stats="Campaign sent 2 days ago"
-                content={
-                  <div
-                    id="chartPreferences"
-                    className="ct-chart ct-perfect-fourth"
-                  >
-                    <ChartistGraph data={dataPie} type="Pie" />
-                  </div>
-                }
-                legend={
-                  <div className="legend">{this.createLegend(legendPie)}</div>
-                }
-              />
-            </Col>
-          </Row>
-
-          <Row>
-            <Col md={6}>
-              <Card
-                id="chartActivity"
-                title="2014 Sales"
-                category="All products including Taxes"
-                stats="Data information certified"
-                statsIcon="fa fa-check"
-                content={
-                  <div className="ct-chart">
-                    <ChartistGraph
-                      data={dataBar}
-                      type="Bar"
-                      options={optionsBar}
-                      responsiveOptions={responsiveBar}
-                    />
-                  </div>
-                }
-                legend={
-                  <div className="legend">{this.createLegend(legendBar)}</div>
-                }
-              />
-            </Col>
-
-            <Col md={6}>
-              <Card
-                title="Tasks"
-                category="Backend development"
-                stats="Updated 3 minutes ago"
-                statsIcon="fa fa-history"
-                content={
-                  <div className="table-full-width">
-                    <table className="table">
-                      <Tasks />
-                    </table>
-                  </div>
-                }
-              />
-            </Col>
-          </Row>
-        </Grid> */}
       </div>
     );
   }
