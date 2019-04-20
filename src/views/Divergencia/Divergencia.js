@@ -5,7 +5,9 @@ import {
 	Container,
 	Table,
 	Form,
-	Button
+	Button,
+  Row,
+  Col
 } from "react-bootstrap"
 
 class Divergencia extends Component {
@@ -68,31 +70,39 @@ class Divergencia extends Component {
     return (
       <div className="content">
         <h1>Divergencia</h1>
-        <Button variant="info" onClick={this.auditar}>Auditoria</Button>
         <Container fluid>
-      		<Table striped size="sm" responsive>
-            <thead>
-            	<tr>
-            		<th>Código</th>
-            		<th>Divergencia</th>
-            		<th>Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-            	{divergencia.map((prop,key)=>{
-            		return <tr key={key}>
-            			<td>{prop.cod}</td>
-            			<td>{prop.divergencia}</td>
-		        			<td>
-		        				<Form.Check 
-			        				checked={prop.auditar}
-	                    onChange={e => this.handleChange(e, key)}
-		        				/>
-		        			</td>
-            		</tr>
-            	})}
-            </tbody>
-          </Table>
+          <Row>
+            <Col lg={4} md={6}>
+              <Button variant="info" onClick={this.auditar}>
+                Auditoria
+              </Button>
+            </Col>
+            <Col md={12}>
+          		<Table striped size="sm" responsive>
+                <thead>
+                	<tr>
+                		<th>Código</th>
+                		<th>Divergencia</th>
+                		<th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                	{divergencia.map((prop,key)=>{
+                		return <tr key={key}>
+                			<td>{prop.cod}</td>
+                			<td>{prop.divergencia}</td>
+    		        			<td>
+    		        				<Form.Check 
+    			        				checked={prop.auditar}
+    	                    onChange={e => this.handleChange(e, key)}
+    		        				/>
+    		        			</td>
+                		</tr>
+                	})}
+                </tbody>
+              </Table>
+            </Col>
+          </Row>
       	</Container>      
       </div>
     );

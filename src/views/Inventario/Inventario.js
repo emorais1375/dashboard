@@ -15,13 +15,11 @@ class Inventario extends Component {
     super(props);
     this.state = {
     	usuario_coordenador_id: localStorage.getItem('user_id') || '',
-    	nome: 'coordenador-usu',
     	inventarios: []
     }
     if(props.location.state){
     	this.state = {
     		usuario_coordenador_id: props.location.state['id'],
-    		nome: props.location.state['nome'],
     		inventarios: []
     	}
     }
@@ -68,12 +66,12 @@ class Inventario extends Component {
   }
 
   render() {
-  	const { nome, inventarios, usuario_coordenador_id} = this.state
+  	const { inventarios, usuario_coordenador_id} = this.state
     const abrir = <Tooltip id="remove_tooltip">Abrir</Tooltip>;
     return (
       <div className="content">
         <InventNavbar />
-        <h1>Inventario de {nome}</h1>
+        <h1>Inventarios</h1>
         	<Container fluid>
         		<Table striped size="sm" responsive>
               <thead>
@@ -89,7 +87,7 @@ class Inventario extends Component {
               			<td>{prop.data} - {prop.hora}</td>
               			<td>{prop.status}</td>
               			<td>
-                      <Button variant="danger" onClick={e => this.abrirInventario(e, prop.id, prop.tipo_inventario)}>
+                      <Button variant="info" size="sm" onClick={e => this.abrirInventario(e, prop.id, prop.tipo_inventario)}>
                         Inventário
                       </Button>
               			</td>

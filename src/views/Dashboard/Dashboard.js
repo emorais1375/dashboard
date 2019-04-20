@@ -150,9 +150,9 @@ class Dashboard extends Component {
           <Row>
             <Col lg={4}  md={6}>
               <h6>{timeFormat}</h6>
-              <Button variant="info" disabled={isPaused?false:true} onClick={this.playClock}>Play</Button>
-              <Button variant="info" disabled={isPaused?true:false} onClick={this.pauseClock}>Pause</Button>
-              <Button variant="info" onClick={this.stopClock}>Stop</Button>
+              <Button size="sm" variant="info" disabled={isPaused?false:true} onClick={this.playClock}>Play</Button>
+              <Button size="sm" variant="info" disabled={isPaused?true:false} onClick={this.pauseClock}>Pause</Button>
+              <Button size="sm" variant="info" onClick={this.stopClock}>Stop</Button>
             </Col>
           </Row>
           <Row>

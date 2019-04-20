@@ -8,7 +8,8 @@ import {
     Form, 
     Table,
     ButtonToolbar,
-    Button 
+    Button,
+    Row
 } from "react-bootstrap";
 import { truncateSync } from "fs";
 
@@ -189,6 +190,7 @@ class Enderecamento extends Component {
       <div>
         <h1>Enderecamento</h1>
         <Container fluid>
+          <Row>
             <Col md={12}>
                 <Form onSubmit={this.handleSubmit}>
                     <Form.Row>
@@ -241,6 +243,7 @@ class Enderecamento extends Component {
                     </tbody>
                 </Table>
             </Col>
+          </Row>
         </Container>
       </div>
     );

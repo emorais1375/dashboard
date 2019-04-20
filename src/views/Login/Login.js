@@ -90,7 +90,7 @@ class Login extends Component {
                             </Form.Group>
 
                             <ButtonToolbar>
-                                <Button as="input" type="submit" value="Entrar" block />
+                                <Button variant="info"  as="input" type="submit" value="Entrar" block />
                             </ButtonToolbar>
                         </Form>
                     </Card.Body>
