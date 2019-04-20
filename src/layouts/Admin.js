@@ -6,27 +6,29 @@ import routes2 from "../routes/dashboard";
 import routes from "../routes";
 import AdminNavbar from "../components/Navbars/AdminNavbar"
 
-function Admin() {
-  return (
-    <div>
-      <AdminNavbar />
-      <Switch>
-        {routes.map((prop, key) => {
-          if (prop.layout === "/admin"){
-            return (
-              <Route 
-                path={prop.layout + prop.path}
-                component={prop.component}
-                key={key}
-              />
-            );
-          } else {
-            return null;
-          }
-        })}
-      </Switch>
-    </div>
-  );
+class Admin extends Component {
+  render() {
+    return (
+      <div>
+        <AdminNavbar {...this.props}/>
+        <Switch>
+          {routes.map((prop, key) => {
+            if (prop.layout === "/admin"){
+              return (
+                <Route 
+                  path={prop.layout + prop.path}
+                  component={prop.component}
+                  key={key}
+                />
+              );
+            } else {
+              return null;
+            }
+          })}
+        </Switch>
+      </div>
+    );
+  }
 }
 
 export default Admin;
