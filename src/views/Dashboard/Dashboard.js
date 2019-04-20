@@ -45,10 +45,13 @@ class Dashboard extends Component {
   startClock(){
     this.interval = setInterval(
       () => {
-        if(!this.state.isPaused) 
+        if(!this.state.isPaused){
           this.tick()
+          this.lerColeta()
+        }
       }, 1000
-    );
+    ); 
+    console.log('[interval] iniciado')
   }
   playClock(){
 
@@ -92,7 +95,6 @@ class Dashboard extends Component {
   }
   componentDidMount() {
     this.startClock();
-    this.lerColeta();
     let {inventario_id} = this.state;
     if (inventario_id) {
       let connection = mysql.createConnection(env.config_mysql);
@@ -116,6 +118,7 @@ class Dashboard extends Component {
   }
   componentWillUnmount() {
     clearInterval(this.interval);
+    console.log('[interval] finalizado')
   }
   lerColeta(){
     let {inventario_id} = this.state;
