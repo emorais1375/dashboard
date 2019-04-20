@@ -59,25 +59,7 @@ class Dashboard1 extends Component {
 
   }
   stopClock(){
-    alert(
-      'Confronto\n\n' 
-      + '- Cálculos do confronto:\n\n' 
-      + '\t• Quantidade divergente: 0\n'  
-      + '\t• Custo divergente: 0\n'  
-      + '\t• Valor de Custo do inventario: 0\n'  
-      + '\t• Valor divergente em venda: 0\n\n' 
-      + '▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n'
-      + '- Relatório de confronto:\n\n'
-      + '\t• Com base no modelo em anexo\n'
-      + '\t• Quando a divergência for positiva deverá ser marcado com a cor azul\n'
-      + '\t• Quando a divergência for negativa deverá ser marcado em vermelho\n'
-      + '\t• Valores iguais continuam marcados com branco'
-    );
-    alert(
-      'Divergência\n\n' 
-      + '- Relatório de confronto:\n\n'
-      + ' End\t| Cod\t| Desc\t| Qtde base\t| Qtde inventário\n'
-    );
+    alert('Gerar divergencia.');
     this.pauseClock();
     this.setState({
       horas: 0, minutos: 0, segundos: 0, "isEnable": false,
