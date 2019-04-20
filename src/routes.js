@@ -1,4 +1,6 @@
 import Dashboard from "./views/Dashboard/Dashboard";
+import Dashboard1 from "./views/Dashboard/Dashboard1";
+import Dashboard2 from "./views/Dashboard/Dashboard2";
 import Relatorios from "./views/Relatorios/Relatorios";
 import Equipe from "./views/Equipe/Equipe";
 import Confronto from "./views/Confronto/Confron";
@@ -7,6 +9,7 @@ import Enderecamento from "./views/Enderecamento/Enderecamento";
 import Login from "./views/Login/Login";
 import Inventario from "./views/Inventario/Inventario";
 import Divergencia from "./views/Divergencia/Divergencia";
+import Divergencia1 from "./views/Divergencia/Divergencia1";
 
 import HelloWorld from "./components/App/HelloWorld";
 
@@ -60,8 +63,8 @@ const dashboardRoutes = [
   // Audit1
   {
     path: "/dashboard",
-    name: "Dashboard",
-    component: Dashboard,
+    name: "Dashboard1",
+    component: Dashboard1,
     layout: "/audit1"
   }, {
     path: "/relatorios",
@@ -100,15 +103,15 @@ const dashboardRoutes = [
     layout: "/audit1"
   }, {
     path: "/divergencia",
-    name: "Divergencia",
-    component: Divergencia,
+    name: "Divergencia1",
+    component: Divergencia1,
     layout: "/audit1"
   },
   // Audit2
   {
     path: "/dashboard",
-    name: "Dashboard",
-    component: Dashboard,
+    name: "Dashboard2",
+    component: Dashboard2,
     layout: "/audit2"
   }, {
     path: "/relatorios",

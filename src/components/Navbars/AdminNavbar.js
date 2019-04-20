@@ -36,9 +36,6 @@ class AdminNavbar extends Component {
             <Nav.Link eventKey={2} href="#/admin/enderecamento">
               Enderecamento
             </Nav.Link>
-            <Nav.Link eventKey={3} href="#/admin/divergencia">
-              Divergencia
-            </Nav.Link>
           </Nav>
           <Button variant="outline-info" href="#/auth/login" onClick={()=>localStorage.clear()}>Sair</Button>
         </Navbar.Collapse>

@@ -4,13 +4,13 @@ import env from '../../../.env'
 import { Container, Row, Col, Table, Button } from "react-bootstrap";
 import { Card } from "../../components/Card/Card";
 
-class Dashboard extends Component {
+class Dashboard1 extends Component {
   constructor(props) {
     super(props);
     this.state = {
       inventario_id: localStorage.getItem('inv_id') || '',
       inventario: [],
-      base: [],
+      base: JSON.parse(localStorage.getItem('div1')) || [],
       coleta: [],
       isPaused: true,
       horas: 0, minutos: 0, segundos: 0,
@@ -83,7 +83,7 @@ class Dashboard extends Component {
       horas: 0, minutos: 0, segundos: 0, "isEnable": false,
       timeFormat: '00:00:00',
     });
-    this.props.history.push('/admin/divergencia')
+    this.props.history.push('/audit1/divergencia')
   }
   pauseClock(){
     this.setState({"isPaused": true, "isEnable": false});
@@ -96,6 +96,8 @@ class Dashboard extends Component {
   }
   componentDidMount() {
     this.startClock();
+  }
+  lerBase() {
     let {inventario_id} = this.state;
     if (inventario_id) {
       let connection = mysql.createConnection(env.config_mysql);
@@ -218,4 +220,4 @@ class Dashboard extends Component {
   }
 }
 
-export default Dashboard;
+export default Dashboard1;

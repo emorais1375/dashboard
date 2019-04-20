@@ -33,9 +33,6 @@ class Audit2Navbar extends Component {
             <Nav.Link eventKey={1} href="#/audit2/equipe">
               Equipe
             </Nav.Link>
-            <Nav.Link eventKey={3} href="#/audit2/divergencia">
-              Divergencia
-            </Nav.Link>
           </Nav>
           <Button variant="outline-info" href="#/auth/login" onClick={()=>localStorage.clear()}>Sair</Button>
         </Navbar.Collapse>

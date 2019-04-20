@@ -10,7 +10,7 @@ import {
   Col
 } from "react-bootstrap"
 
-class Divergencia extends Component {
+class Divergencia1 extends Component {
 	constructor(props){
     super(props);
     this.state = {
@@ -27,7 +27,7 @@ class Divergencia extends Component {
     if (inventario_id) {
       let connection = mysql.createConnection(env.config_mysql);
     	let query = `
-    		SELECT b.cod, c.qtd - b.qtd AS 'divergencia', false AS 'auditar'
+    		SELECT b.cod, b.qtd - c.qtd AS 'divergencia', false AS 'auditar'
   			FROM 
   				(SELECT cod_barra AS 'cod', COUNT(cod_barra) AS 'qtd' 
   				FROM base WHERE inventario_id=?
@@ -57,20 +57,20 @@ class Divergencia extends Component {
     this.setState({divergencia})
   }
   auditar() {
-		let texto = 'Auditar selecionados:\n'
+    let texto = 'Auditar selecionados:\n'
     let div = []
     this.state.divergencia.map(p=>{
-    	if (p.auditar) {
-    		texto = texto +' - ' + p.cod + '\n'
+      if (p.auditar) {
+        texto = texto +' - ' + p.cod + '\n'
         div.push({cod_barra: p.cod, qtd: p.divergencia})
-    	}
+      }
     })
     if (div.length) {
       console.log(div)
       alert(texto)
-      localStorage.setItem('div1', JSON.stringify(div))
+      localStorage.setItem('div2', JSON.stringify(div))
       console.log(localStorage.getItem('div1') || [])
-      this.props.history.push('/audit1/dashboard')
+      this.props.history.push('/audit2/dashboard')
     } else {
       alert('Não foram selecionados itens para serem auditados.')
       console.log('Vazio!')
@@ -120,4 +120,4 @@ class Divergencia extends Component {
   }
 }
 
-export default Divergencia;
+export default Divergencia1;
