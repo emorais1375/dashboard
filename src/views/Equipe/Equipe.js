@@ -25,7 +25,7 @@ class Equipe extends Component {
       ],
       nomes: [],
       nome: 0, inicial: '', final: '', user_inv: [],
-      inventario_id: 1,
+      inventario_id: localStorage.getItem('inv_id') || '',
       inicial_end: '', final_end: '',
       descricao: ''
     };
@@ -38,34 +38,38 @@ class Equipe extends Component {
     this.atualizaLista();
   }
   getDescricao() {
-    let connection = mysql.createConnection(env.config_mysql);
-    let inventario_id = this.state.inventario_id;
-    let sql = "\
-    select descricao 'desc'\
-    from enderecamento\
-    where id IN (\
-    ( select min(id) from enderecamento where inventario_id=?),\
-    ( select max(id) from enderecamento where inventario_id=?))";
-    connection.query(sql, [inventario_id, inventario_id], (error, results, fields)=>{
-      if(error) {
-        console.log(error.code,error.fatal);
-        return;
-      }
-      if (results.length === 2) {
-        const descricao = results[0].desc.split('-')[0];
-        const inicial_end = results[0].desc.split('-')[1];
-        const final_end = results[1].desc.split('-')[1];
-        console.log(descricao);
-        this.setState({descricao, inicial_end, final_end});
-      }else if (results.length) {
-        const descricao = results[0].desc.split('-')[0];
-        const inicial_end = results[0].desc.split('-')[1];
-        const final_end = results[0].desc.split('-')[1];
-        console.log(descricao);
-        this.setState({descricao, inicial_end, final_end});
-      }
-      connection.end();
-    });
+    let {inventario_id} = this.state
+    if (inventario_id) {
+      let connection = mysql.createConnection(env.config_mysql);
+      let sql = "\
+      select descricao 'desc'\
+      from enderecamento\
+      where id IN (\
+      ( select min(id) from enderecamento where inventario_id=?),\
+      ( select max(id) from enderecamento where inventario_id=?))";
+      connection.query(sql, [inventario_id, inventario_id], (error, results, fields)=>{
+        if(error) {
+          console.log(error.code,error.fatal);
+          return;
+        }
+        if (results.length === 2) {
+          const descricao = results[0].desc.split('-')[0];
+          const inicial_end = results[0].desc.split('-')[1];
+          const final_end = results[1].desc.split('-')[1];
+          console.log(descricao);
+          this.setState({descricao, inicial_end, final_end});
+        }else if (results.length) {
+          const descricao = results[0].desc.split('-')[0];
+          const inicial_end = results[0].desc.split('-')[1];
+          const final_end = results[0].desc.split('-')[1];
+          console.log(descricao);
+          this.setState({descricao, inicial_end, final_end});
+        }
+        connection.end();
+      });
+    } else {
+      console.log('Vazio!')
+    }
   }
   atualizaLista() {
     let connection = mysql.createConnection(env.config_mysql);

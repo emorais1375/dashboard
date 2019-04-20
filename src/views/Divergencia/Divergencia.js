@@ -12,35 +12,40 @@ class Divergencia extends Component {
 	constructor(props){
     super(props);
     this.state = {
-    	divergencia: []
+    	divergencia: [],
+      inventario_id: localStorage.getItem('inv_id') || ''
     }
 
     this.handleChange = this.handleChange.bind(this);
     this.auditar = this.auditar.bind(this);
   }
   componentDidMount() {
-  	console.log('DivergenciaPage')
-    let inventario_id = this.state.inventario_id;
-    let connection = mysql.createConnection(env.config_mysql);
-  	let query = `
-  		SELECT b.cod, b.qtd - c.qtd AS 'divergencia', false AS 'auditar'
-			FROM 
-				(SELECT cod_barra AS 'cod', COUNT(cod_barra) AS 'qtd' 
-				FROM base WHERE inventario_id=1 
-				GROUP BY cod_barra) b,
-				(SELECT cod_barra AS 'cod', COUNT(cod_barra) AS 'qtd' 
-				FROM coleta 
-				GROUP BY cod_barra) c 
-			WHERE b.cod=c.cod
-  	`
-  	connection.query(query, [inventario_id],(error, divergencia, fields) => {
-      if(error){
-          console.log(error.code,error.fatal)
-          return
-      }
-      this.setState({divergencia})
-      connection.end();
-    })
+    const {inventario_id} = this.state
+    console.log('DivergenciaPage, inventario_id:', inventario_id)
+    if (inventario_id) {
+      let connection = mysql.createConnection(env.config_mysql);
+    	let query = `
+    		SELECT b.cod, b.qtd - c.qtd AS 'divergencia', false AS 'auditar'
+  			FROM 
+  				(SELECT cod_barra AS 'cod', COUNT(cod_barra) AS 'qtd' 
+  				FROM base WHERE inventario_id=?
+  				GROUP BY cod_barra) b,
+  				(SELECT cod_barra AS 'cod', COUNT(cod_barra) AS 'qtd' 
+  				FROM coleta 
+  				GROUP BY cod_barra) c 
+  			WHERE b.cod=c.cod
+    	`
+    	connection.query(query, [inventario_id],(error, divergencia, fields) => {
+        if(error){
+            console.log(error.code,error.fatal)
+            return
+        }
+        this.setState({divergencia})
+        connection.end();
+      })
+    } else {
+      console.log('Vazio!')
+    }
   }
   handleChange(ev, key) {
     const target = ev.target

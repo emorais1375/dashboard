@@ -6,12 +6,12 @@ import {
   Form,
   FormControl,
   Button,
-  NavItem 
+  NavItem
 } from "react-bootstrap";
-import logo from "./../../assets/img/logo.svg";
-import dashboardRoutes from "../../routes/dashboard";
 
-class Header extends Component {
+import logo from "../../assets/img/logo.svg";
+
+class AdminNavbar extends Component {
   render() {
     return (
       <Navbar collapseOnSelect bg="dark" variant="dark" expand="md">
@@ -27,39 +27,33 @@ class Header extends Component {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
-            <Nav.Link href="#Dashboard">
+            <Nav.Link href="#/admin/dashboard">
               Dashboard
             </Nav.Link>
-            <Nav.Link eventKey={1} href="#Relatorios">
+            <Nav.Link eventKey={1} href="#/admin/relatorios">
               Relatórios
             </Nav.Link>
-            <Nav.Link eventKey={2} href="#Equipe">
+            <Nav.Link eventKey={2} href="#/admin/equipe">
               Equipe
             </Nav.Link>
-            <Nav.Link eventKey={3} href="#Enderecamento">
+            <Nav.Link eventKey={3} href="#/admin/enderecamento">
               Enderecamento
             </Nav.Link>
-            <Nav.Link eventKey={4} href="#Confronto">
+            <Nav.Link eventKey={4} href="#/admin/confronto">
               Confronto
             </Nav.Link>
-            <Nav.Link eventKey={5} href="#Auditoria">
+            <Nav.Link eventKey={5} href="#/admin/auditoria">
               Auditoria
             </Nav.Link>
-            <Nav.Link eventKey={6} href="#Login">
-              Login
-            </Nav.Link>
-            <Nav.Link eventKey={7} href="#Inventario">
-              Inventario
-            </Nav.Link>
-            <Nav.Link eventKey={8} href="#Divergencia">
-              Divergencia
-            </Nav.Link>
           </Nav>
-          <Button variant="outline-info">Sair</Button>
+          <Button variant="outline-info" href="#/auth/login" onClick={()=>localStorage.clear()}>Sair</Button>
         </Navbar.Collapse>
       </Navbar>
+
+      
+
     );
   }
 }
 
-export default Header;
+export default AdminNavbar;

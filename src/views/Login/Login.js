@@ -1,6 +1,8 @@
 import React, { Component } from "react"
 import mysql from 'mysql'
 import env from '../../../.env'
+
+import LoginNavbar from "../../components/Navbars/LoginNavbar"
 import MaskedFormControl from 'react-bootstrap-maskedinput'
 import {
   Button,
@@ -13,7 +15,7 @@ class Login extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      cpf:'', password:'', usuario:[]
+      cpf:'234.234.234-23', password:'1234', usuario:[]
     }
     this.handleChange = this.handleChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -45,9 +47,10 @@ class Login extends Component {
           return
         }
         if (results.length) {
-          console.log(results[0].usuario_id)
-        }
-        else {
+          console.log('user_id',results[0].usuario_id)
+          localStorage.setItem('user_id',results[0].usuario_id)
+          this.props.history.push('/inventario')
+        } else {
           console.log('CPF:'+cpf+' ou Senha:'+password+' inválida!')
         }
         connection.end()
@@ -60,7 +63,8 @@ class Login extends Component {
   render() {
         const { validated, cpf, password } = this.state;
         return (
-        <div className="col-md-3">
+        <div>
+            <LoginNavbar />
             <br/>
             <br/>
                 <Card bg="light" style={{ width: '18rem' }}>

@@ -17,10 +17,10 @@ class Enderecamento extends Component {
         super(props);
         this.state = {
             enderecamento: [],
-            tipo_inventario: 'VARREDURA',
+            tipo_inventario: localStorage.getItem('inv_tipo') || '',
             prefixo: '',
             inicial: '', final: '',
-            inventario_id: 1,
+            inventario_id: localStorage.getItem('inv_id') || '',
         }; 
         this.handleChange = this.handleChange.bind(this);
         this.handleChange2 = this.handleChange2.bind(this);
@@ -31,62 +31,66 @@ class Enderecamento extends Component {
         this.atualizaLista();
     }
     atualizaLista() {
-        let inventario_id = this.state.inventario_id;
-        let connection = mysql.createConnection(env.config_mysql);
-        let query = `
-            SELECT 
-                e.id,
-                e.descricao,
-                e.excecao 
-            FROM 
-                enderecamento e 
-            WHERE 
-                e.inventario_id = ?
-            ORDER BY
-                e.id DESC 
-            LIMIT 10
-        `
-
-        connection.query(query, [inventario_id],(error, enderecamento, fields) => {
-            if(error){
-                console.log(error.code,error.fatal)
-                return
-            }
-            this.setState({enderecamento});
-            query = `
-                SELECT
-                    e.descricao 'desc',
-                    i.tipo_inventario 'tipo'
-                FROM
-                    enderecamento e,
-                    inventario i
-                WHERE
-                    e.id = (
-                        SELECT
-                            MAX(id) 
-                        FROM
-                            enderecamento
-                        WHERE
-                            inventario_id = ?
-                    )
-                AND
-                    i.id = ?
+        let {inventario_id} = this.state;
+        if (inventario_id) {
+            let connection = mysql.createConnection(env.config_mysql);
+            let query = `
+                SELECT 
+                    e.id,
+                    e.descricao,
+                    e.excecao 
+                FROM 
+                    enderecamento e 
+                WHERE 
+                    e.inventario_id = ?
+                ORDER BY
+                    e.id DESC 
+                LIMIT 10
             `
 
-            connection.query(query, [inventario_id, inventario_id],(error, results, fields) => {
+            connection.query(query, [inventario_id],(error, enderecamento, fields) => {
                 if(error){
-                    console.log(error.code,error.fatal);
-                    return;
+                    console.log(error.code,error.fatal)
+                    return
                 }
-                if (results.length) {
-                    const prefixo = results[0].desc.split('-')[0];
-                    const inicial = results[0].desc.split('-')[1];
-                    const tipo_inventario = results[0].tipo;
-                    this.setState({prefixo, inicial, tipo_inventario});
-                }
-                connection.end();
+                this.setState({enderecamento});
+                query = `
+                    SELECT
+                        e.descricao 'desc',
+                        i.tipo_inventario 'tipo'
+                    FROM
+                        enderecamento e,
+                        inventario i
+                    WHERE
+                        e.id = (
+                            SELECT
+                                MAX(id) 
+                            FROM
+                                enderecamento
+                            WHERE
+                                inventario_id = ?
+                        )
+                    AND
+                        i.id = ?
+                `
+
+                connection.query(query, [inventario_id, inventario_id],(error, results, fields) => {
+                    if(error){
+                        console.log(error.code,error.fatal);
+                        return;
+                    }
+                    if (results.length) {
+                        const prefixo = results[0].desc.split('-')[0];
+                        const inicial = results[0].desc.split('-')[1];
+                        const tipo_inventario = results[0].tipo;
+                        this.setState({prefixo, inicial, tipo_inventario});
+                    }
+                    connection.end();
+                })
             })
-        })
+        } else {
+            console.log('Vazio!')
+        }
     }
     handleChange2(ev) {
         const target = ev.target

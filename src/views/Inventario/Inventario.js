@@ -1,6 +1,8 @@
 import React, { Component } from "react";
 import mysql from 'mysql';
 import env from '../../../.env'
+
+import InventNavbar from "../../components/Navbars/InventNavbar"
 import {
 	Container,
 	Table,
@@ -12,7 +14,7 @@ class Inventario extends Component {
 	constructor(props){
     super(props);
     this.state = {
-    	usuario_coordenador_id: 10,
+    	usuario_coordenador_id: localStorage.getItem('user_id') || '',
     	nome: 'coordenador-usu',
     	inventarios: []
     }
@@ -23,10 +25,11 @@ class Inventario extends Component {
     		inventarios: []
     	}
     }
+    this.abrirInventario = this.abrirInventario.bind(this)
   }
 
   componentDidMount() {
-  	const usuario_coordenador_id = this.state.usuario_coordenador_id
+  	const {usuario_coordenador_id} = this.state
   	if (usuario_coordenador_id) {
       let connection = mysql.createConnection(env.config_mysql);
   		let query = `
@@ -56,13 +59,20 @@ class Inventario extends Component {
   	}
   }
 
-
+  abrirInventario(e, inv_id, inv_tipo) {
+    console.log('inv_id:',inv_id)
+    console.log('inv_tipo:',inv_tipo)
+    localStorage.setItem('inv_id', inv_id)
+    localStorage.setItem('inv_tipo', inv_tipo)
+    this.props.history.push('/admin/dashboard')
+  }
 
   render() {
   	const { nome, inventarios, usuario_coordenador_id} = this.state
     const abrir = <Tooltip id="remove_tooltip">Abrir</Tooltip>;
     return (
       <div className="content">
+        <InventNavbar />
         <h1>Inventario de {nome}</h1>
         	<Container fluid>
         		<Table striped size="sm" responsive>
@@ -79,7 +89,7 @@ class Inventario extends Component {
               			<td>{prop.data} - {prop.hora}</td>
               			<td>{prop.status}</td>
               			<td>
-                      <Button variant="danger" onClick={() => {alert(prop.id)}}>
+                      <Button variant="danger" onClick={e => this.abrirInventario(e, prop.id, prop.tipo_inventario)}>
                         Inventário
                       </Button>
               			</td>
