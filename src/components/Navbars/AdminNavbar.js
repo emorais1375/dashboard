@@ -30,20 +30,14 @@ class AdminNavbar extends Component {
             <Nav.Link href="#/admin/dashboard">
               Dashboard
             </Nav.Link>
-            <Nav.Link eventKey={1} href="#/admin/relatorios">
-              Relatórios
-            </Nav.Link>
-            <Nav.Link eventKey={2} href="#/admin/equipe">
+            <Nav.Link eventKey={1} href="#/admin/equipe">
               Equipe
             </Nav.Link>
-            <Nav.Link eventKey={3} href="#/admin/enderecamento">
+            <Nav.Link eventKey={2} href="#/admin/enderecamento">
               Enderecamento
             </Nav.Link>
-            <Nav.Link eventKey={4} href="#/admin/confronto">
-              Confronto
-            </Nav.Link>
-            <Nav.Link eventKey={5} href="#/admin/auditoria">
-              Auditoria
+            <Nav.Link eventKey={3} href="#/admin/divergencia">
+              Divergencia
             </Nav.Link>
           </Nav>
           <Button variant="outline-info" href="#/auth/login" onClick={()=>localStorage.clear()}>Sair</Button>
