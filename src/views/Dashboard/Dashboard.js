@@ -1,4 +1,6 @@
 import React, { Component } from "react";
+import mysql from 'mysql';
+import env from '../../../.env'
 // import ChartistGraph from "react-chartist";
 import { Container, Row, Col, Table, Button } from "react-bootstrap";
 
@@ -10,6 +12,7 @@ class Dashboard extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      inventario_id: localStorage.getItem('inv_id') || '',
       inventario: [],
       base: [],
       isPaused: true,
@@ -87,6 +90,26 @@ class Dashboard extends Component {
   }
   componentDidMount() {
     this.startClock();
+    let {inventario_id} = this.state;
+    if (inventario_id) {
+      let connection = mysql.createConnection(env.config_mysql);
+      let query = `
+        SELECT cod_barra, count(cod_barra) AS 'qtd' 
+        FROM base 
+        WHERE inventario_id=?
+        GROUP BY cod_barra
+      `
+      connection.query(query, [inventario_id],(error, base, fields) => {
+        if(error){
+            console.log(error.code,error.fatal)
+            return
+        }
+        this.setState({ base })
+        connection.end();
+      })
+    } else {
+      console.log('Vazio!')
+    }
   }
   componentWillUnmount() {
     clearInterval(this.interval);
@@ -157,17 +180,15 @@ class Dashboard extends Component {
                   <Table striped >
                     <thead>
                       <tr>
-                        {thArray.map((prop, key) => {
-                          return <th key={key}>{prop}</th>;
-                        })}
+                        <th>Código</th>
+                        <th>Quantidade</th>
                       </tr>
                     </thead>
                     <tbody>
                       {this.state.base.map((prop, key) => {
                         return (
                           <tr key={key}>
-                            <td>{prop.id}</td>
-                            <td>{prop.barcode}</td>
+                            <td>{prop.cod_barra}</td>
                             <td>{prop.qtd}</td>
                           </tr>
                         );
