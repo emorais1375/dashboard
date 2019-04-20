@@ -56,6 +56,100 @@ const dashboardRoutes = [
     name: "Divergencia",
     component: Divergencia,
     layout: "/admin"
+  },
+  // Audit1
+  {
+    path: "/dashboard",
+    name: "Dashboard",
+    component: Dashboard,
+    layout: "/audit1"
+  }, {
+    path: "/relatorios",
+    name: "Relatorios",
+    component: Relatorios,
+    layout: "/audit1"
+  }, {
+    path: "/equipe",
+    name: "Equipe",
+    component: Equipe,
+    layout: "/audit1"
+  }, {
+    path: "/enderecamento",
+    name: "Enderecamento",
+    component: Enderecamento,
+    layout: "/audit1"
+  }, {
+    path: "/confronto",
+    name: "Confronto",
+    component: Confronto,
+    layout: "/audit1"
+  }, {
+    path: "/auditoria",
+    name: "Auditoria",
+    component: Auditoria,
+    layout: "/audit1"
+  }, {
+    path: "/login",
+    name: "Login",
+    component: Login,
+    layout: "/audit1"
+  }, {
+    path: "/inventario",
+    name: "Inventario",
+    component: Inventario,
+    layout: "/audit1"
+  }, {
+    path: "/divergencia",
+    name: "Divergencia",
+    component: Divergencia,
+    layout: "/audit1"
+  },
+  // Audit2
+  {
+    path: "/dashboard",
+    name: "Dashboard",
+    component: Dashboard,
+    layout: "/audit2"
+  }, {
+    path: "/relatorios",
+    name: "Relatorios",
+    component: Relatorios,
+    layout: "/audit2"
+  }, {
+    path: "/equipe",
+    name: "Equipe",
+    component: Equipe,
+    layout: "/audit2"
+  }, {
+    path: "/enderecamento",
+    name: "Enderecamento",
+    component: Enderecamento,
+    layout: "/audit2"
+  }, {
+    path: "/confronto",
+    name: "Confronto",
+    component: Confronto,
+    layout: "/audit2"
+  }, {
+    path: "/auditoria",
+    name: "Auditoria",
+    component: Auditoria,
+    layout: "/audit2"
+  }, {
+    path: "/login",
+    name: "Login",
+    component: Login,
+    layout: "/audit2"
+  }, {
+    path: "/inventario",
+    name: "Inventario",
+    component: Inventario,
+    layout: "/audit2"
+  }, {
+    path: "/divergencia",
+    name: "Divergencia",
+    component: Divergencia,
+    layout: "/audit2"
   }
 ];
 

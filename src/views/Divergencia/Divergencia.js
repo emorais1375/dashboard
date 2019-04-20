@@ -64,6 +64,7 @@ class Divergencia extends Component {
     	}
     })
   	alert(texto)
+    this.props.history.push('/audit1/dashboard')
   }
   render() {
   	const { divergencia } = this.state
