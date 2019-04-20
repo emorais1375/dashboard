@@ -68,7 +68,7 @@ class Divergencia extends Component {
     return (
       <div className="content">
         <h1>Divergencia</h1>
-        <Button onClick={this.auditar}>Auditoria</Button>
+        <Button variant="info" onClick={this.auditar}>Auditoria</Button>
         <Container fluid>
       		<Table striped size="sm" responsive>
             <thead>

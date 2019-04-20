@@ -109,9 +109,9 @@ class Dashboard extends Component {
           <Row>
             <Col lg={4}  md={6}>
               <h6>{this.state.timeFormat}</h6>
-              <Button onClick={this.playClock}>Play</Button>
-              <Button onClick={this.pauseClock}>Pause</Button>
-              <Button onClick={this.stopClock}>Stop</Button>
+              <Button variant="info" onClick={this.playClock}>Play</Button>
+              <Button variant="info" onClick={this.pauseClock}>Pause</Button>
+              <Button variant="info" onClick={this.stopClock}>Stop</Button>
             </Col>
           </Row>
           <Row>
