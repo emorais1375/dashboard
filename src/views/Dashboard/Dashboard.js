@@ -139,7 +139,7 @@ class Dashboard extends Component {
     }
   }
   render() {
-    const { base, coleta, timeFormat } = this.state
+    const { base, coleta, timeFormat, isPaused } = this.state
     return (
       <div className="content">
         <h1>Dashboard</h1>
@@ -147,8 +147,8 @@ class Dashboard extends Component {
           <Row>
             <Col lg={4}  md={6}>
               <h6>{timeFormat}</h6>
-              <Button variant="info" disabled={false?true:false} onClick={this.playClock}>Play</Button>
-              <Button variant="info" onClick={this.pauseClock}>Pause</Button>
+              <Button variant="info" disabled={isPaused?false:true} onClick={this.playClock}>Play</Button>
+              <Button variant="info" disabled={isPaused?true:false} onClick={this.pauseClock}>Pause</Button>
               <Button variant="info" onClick={this.stopClock}>Stop</Button>
             </Col>
           </Row>
