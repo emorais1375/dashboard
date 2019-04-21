@@ -1,8 +1,5 @@
 import React, { Component } from "react";
-import { Route, Switch, Redirect } from "react-router-dom";
-
-import Header from "../components/Header/Header";
-import routes2 from "../routes/dashboard";
+import { Route, Switch } from "react-router-dom";
 import routes from "../routes";
 import AdminNavbar from "../components/Navbars/AdminNavbar"
 

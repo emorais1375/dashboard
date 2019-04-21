@@ -11,8 +11,6 @@ import Inventario from "./views/Inventario/Inventario";
 import Divergencia from "./views/Divergencia/Divergencia";
 import Divergencia1 from "./views/Divergencia/Divergencia1";
 
-import HelloWorld from "./components/App/HelloWorld";
-
 const dashboardRoutes = [
   {
     path: "/dashboard",

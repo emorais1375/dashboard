@@ -40,9 +40,6 @@ class AdminNavbar extends Component {
           <Button variant="outline-info" href="#/auth/login" onClick={()=>localStorage.clear()}>Sair</Button>
         </Navbar.Collapse>
       </Navbar>
-
-      
-
     );
   }
 }
