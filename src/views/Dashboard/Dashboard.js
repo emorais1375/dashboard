@@ -78,6 +78,14 @@ class Dashboard extends Component {
   }
   componentDidMount() {
     this.startClock();
+    this.lerBase();
+    this.lerColeta();
+  }
+  componentWillUnmount() {
+    clearInterval(this.interval);
+    console.log('[interval] finalizado')
+  }
+  lerBase(){
     let {inventario_id} = this.state;
     if (inventario_id) {
       let connection = mysql.createConnection(env.config_mysql);
@@ -100,10 +108,6 @@ class Dashboard extends Component {
       console.log('Vazio!')
     }
   }
-  componentWillUnmount() {
-    clearInterval(this.interval);
-    console.log('[interval] finalizado')
-  }
   lerColeta(){
     let {inventario_id} = this.state;
     if (inventario_id) {
@@ -111,7 +115,9 @@ class Dashboard extends Component {
       let query = `
         SELECT cod_barra, count(cod_barra) AS 'qtd' 
         FROM coleta 
-        GROUP BY cod_barra;
+        GROUP BY cod_barra
+        ORDER BY qtd DESC
+        LIMIT 5
       `
       connection.query(query ,(error, coleta, fields) => {
         if(error){
@@ -142,15 +148,15 @@ class Dashboard extends Component {
           <Row>
             <Col md={6}>
               <Card 
-                title="Inventário"
+                title="INVENTÁRIO"
                 ctTableFullWidth
                 ctTableResponsive
                 content={
                   <Table striped>
                     <thead>
                       <tr>
-                        <th>Código</th>
-                        <th>Quantidade</th>
+                        <th>EAN</th>
+                        <th>QUANT</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -169,15 +175,15 @@ class Dashboard extends Component {
             </Col>
             <Col md={6}>
               <Card
-                title="Base de dados"
+                title="ESTOQUE"
                 ctTableFullWidth
                 ctTableResponsive
                 content={
                   <Table striped >
                     <thead>
                       <tr>
-                        <th>Código</th>
-                        <th>Quantidade</th>
+                        <th>EAN</th>
+                        <th>SALDO</th>
                       </tr>
                     </thead>
                     <tbody>
