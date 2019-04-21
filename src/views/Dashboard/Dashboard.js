@@ -82,10 +82,11 @@ class Dashboard extends Component {
     if (inventario_id) {
       let connection = mysql.createConnection(env.config_mysql);
       let query = `
-        SELECT cod_barra, count(cod_barra) AS 'qtd' 
+        SELECT cod_barra, saldo_estoque AS 'qtd' 
         FROM base 
         WHERE inventario_id=?
-        GROUP BY cod_barra
+        ORDER BY qtd DESC
+        LIMIT 5
       `
       connection.query(query, [inventario_id],(error, base, fields) => {
         if(error){
