@@ -227,7 +227,7 @@ class Enderecamento extends Component {
                     <tbody>
                         {this.state.enderecamento.map((prop,key) => {
                             return (
-                                <tr key={key}>
+                                <tr key={prop.id}>
                                     <td>{prop.id}</td>
                                     <td>{prop.descricao}</td>
                                     {tipo_inventario !== 'VARREDURA' &&

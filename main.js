@@ -215,6 +215,8 @@ function startExpress () {
 
     for(var i=0; i< coletas.length; i++)
       values.push([
+        coletas[i].inventario_id,
+        coletas[i].tipo_coleta,
         coletas[i].usuario_id,
         coletas[i].data,
         coletas[i].hora,
@@ -231,7 +233,7 @@ function startExpress () {
     let connection = mysql.createConnection(env.config_mysql)
     let query = `
       INSERT INTO 
-        coleta (usuario_id, data, hora, enderecamento,
+        coleta (inventario_id, tipo_coleta, usuario_id, data, hora, enderecamento,
                 cod_barra, validade, fabricacao,
                 lote, itens_embalagem, marca, fornecedor)
       VALUES ?

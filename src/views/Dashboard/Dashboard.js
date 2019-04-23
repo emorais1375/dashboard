@@ -65,7 +65,8 @@ class Dashboard extends Component {
       horas: 0, minutos: 0, segundos: 0, "isEnable": false,
       timeFormat: '00:00:00',
     });
-    this.props.history.push('/admin/divergencia')
+    this.inserirDivergencia()
+    // this.props.history.push('/admin/divergencia')
   }
   pauseClock(){
     this.setState({"isPaused": true, "isEnable": false});
@@ -94,7 +95,6 @@ class Dashboard extends Component {
         FROM base 
         WHERE inventario_id=?
         ORDER BY qtd DESC
-        LIMIT 5
       `
       connection.query(query, [inventario_id],(error, base, fields) => {
         if(error){
@@ -117,7 +117,6 @@ class Dashboard extends Component {
         FROM coleta 
         GROUP BY cod_barra
         ORDER BY qtd DESC
-        LIMIT 5
       `
       connection.query(query ,(error, coleta, fields) => {
         if(error){
@@ -131,6 +130,101 @@ class Dashboard extends Component {
       console.log('Vazio!')
     }
   }
+  inserirDivergencia() {
+    let {inventario_id} = this.state;
+    if (inventario_id) {
+      let connection = mysql.createConnection(env.config_mysql);
+
+      let query = `delete from divergencia where inventario_id=?`
+      connection.query(query , [inventario_id], (error, results, fields) => {
+        if(error){
+            console.log(error.code,error.fatal)
+            return
+        }
+        query = `
+          INSERT INTO divergencia (
+            auditar,
+            inventario_id, base_id, enderecamento, cod_barra,
+            cod_interno, descricao_item, valor_custo,
+            saldo_estoque, qtd_inventario, qtd_divergencia,
+            valor_inventario, valor_saldo_estoque, valor_divergente 
+          )
+          SELECT 
+            CASE
+            WHEN base_id IS NULL THEN 'NAO PODE'
+            WHEN enderecamento IS NULL  THEN 'NAO PODE'
+            ELSE 'NAO' END auditar,
+            
+            
+            
+            inventario_id, base_id, enderecamento, cod_barra,
+            cod_interno, descricao_item, valor_custo,
+            saldo_estoque, qtd_inventario, qtd_divergencia,
+            TRUNCATE(valor_custo*qtd_inventario,2) valor_inventario,
+            TRUNCATE(valor_custo*saldo_estoque,2) valor_saldo_estoque, 
+            TRUNCATE(valor_custo*qtd_divergencia,2) valor_divergente 
+          FROM (
+                SELECT COALESCE(b.inventario_id, c.inventario_id) inventario_id, b.id base_id, enderecamento, b.cod_barra, b.cod_interno, b.descricao_item,
+                COALESCE(b.saldo_estoque, 0) saldo_estoque, COALESCE(c.qtd_inventario, 0) qtd_inventario,
+                COALESCE(c.qtd_inventario, 0) - COALESCE(b.saldo_estoque, 0) qtd_divergencia, b.valor_custo
+                FROM (
+                SELECT id, inventario_id, cod_barra, cod_interno, saldo_estoque, valor_custo, descricao_item
+                FROM base 
+                WHERE inventario_id = ?
+                ) b
+                LEFT OUTER JOIN (
+                SELECT inventario_id, enderecamento, cod_barra, COUNT(cod_barra) qtd_inventario
+                FROM coleta 
+                WHERE inventario_id = ? AND tipo_coleta='INVENTARIO'
+                GROUP BY enderecamento, cod_barra
+                ) c
+                ON b.cod_barra = c.cod_barra
+              UNION
+                SELECT COALESCE(b.inventario_id, c.inventario_id) inventario_id, b.id base_id, enderecamento, c.cod_barra, b.cod_interno, b.descricao_item,
+                COALESCE(b.saldo_estoque, 0) saldo_estoque, COALESCE(c.qtd_inventario, 0) qtd_inventario,
+                COALESCE(c.qtd_inventario, 0) - COALESCE(b.saldo_estoque, 0) qtd_divergencia, b.valor_custo
+                FROM (
+                SELECT id, inventario_id, cod_barra, cod_interno, saldo_estoque, valor_custo, descricao_item 
+                FROM base 
+                WHERE inventario_id = ?
+                ) b
+                RIGHT OUTER JOIN (
+                SELECT inventario_id, enderecamento, cod_barra, COUNT(cod_barra) qtd_inventario
+                FROM coleta 
+                WHERE inventario_id = ? AND tipo_coleta='INVENTARIO'
+                GROUP BY enderecamento, cod_barra
+                ) c
+                ON b.cod_barra = c.cod_barra
+              ) A 
+          HAVING qtd_divergencia != 0
+        `
+        connection.query(query , [inventario_id, inventario_id, inventario_id, inventario_id], (error, results, fields) => {
+          if(error){
+              console.log(error.code,error.fatal)
+              return
+          }
+          query = `
+            SELECT 1 FROM divergencia where inventario_id=? AND auditar='NAO' LIMIT 1
+          `
+          connection.query(query , [inventario_id], (error, results, fields) => {
+            if(error){
+              console.log(error.code,error.fatal)
+              return
+            }
+            if (!results.length) {
+              alert('Não há divergencias para serem auditadas!')
+            } else {
+              this.props.history.push('/admin/divergencia')
+            }
+            connection.end();
+          })
+        })
+      })
+    } else {
+      console.log('inventário ID vazio!')
+    }
+  }
+
   render() {
     const { base, coleta, timeFormat, isPaused } = this.state
     return (
