@@ -3,6 +3,8 @@ import Dashboard1 from "./views/Dashboard/Dashboard1";
 import Dashboard2 from "./views/Dashboard/Dashboard2";
 import Relatorios from "./views/Relatorios/Relatorios";
 import Equipe from "./views/Equipe/Equipe";
+import Equipe1 from "./views/Equipe/Equipe1";
+import Equipe2 from "./views/Equipe/Equipe2";
 import Confronto from "./views/Confronto/Confron";
 import Auditoria from "./views/Auditoria/Auditoria";
 import Enderecamento from "./views/Enderecamento/Enderecamento";
@@ -71,8 +73,8 @@ const dashboardRoutes = [
     layout: "/audit1"
   }, {
     path: "/equipe",
-    name: "Equipe",
-    component: Equipe,
+    name: "Equipe1",
+    component: Equipe1,
     layout: "/audit1"
   }, {
     path: "/enderecamento",
@@ -118,8 +120,8 @@ const dashboardRoutes = [
     layout: "/audit2"
   }, {
     path: "/equipe",
-    name: "Equipe",
-    component: Equipe,
+    name: "Equipe2",
+    component: Equipe2,
     layout: "/audit2"
   }, {
     path: "/enderecamento",

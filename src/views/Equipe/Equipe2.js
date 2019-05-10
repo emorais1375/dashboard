@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import mysql from 'mysql';
 import env from '../../../.env'
+import MaskedFormControl from 'react-bootstrap-maskedinput'
 import {
   Container,
   Row,
@@ -15,10 +16,11 @@ import {
   InputGroup
 } from 'react-bootstrap'
 
-class Equipe extends Component {
+class Equipe2 extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      cpf:'', password:'', nomeForm:'',
       tdArray: [
       ],
       tdArray2: [
@@ -32,6 +34,7 @@ class Equipe extends Component {
     this.handleCancel = this.handleCancel.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);  
+    this.cadastrarUsuario = this.cadastrarUsuario.bind(this);  
   }
   componentDidMount() {
     this.getDescricao();
@@ -41,13 +44,20 @@ class Equipe extends Component {
     let {inventario_id} = this.state
     if (inventario_id) {
       let connection = mysql.createConnection(env.config_mysql);
-      let sql = "\
-      select descricao 'desc'\
-      from enderecamento\
-      where id IN (\
-      ( select min(id) from enderecamento where inventario_id=?),\
-      ( select max(id) from enderecamento where inventario_id=?))";
-      connection.query(sql, [inventario_id, inventario_id], (error, results, fields)=>{
+      let sql = `
+        select descricao 'desc'
+        from enderecamento
+        where id IN (
+        (select min(id) from enderecamento e, (select enderecamento from divergencia 
+        where inventario_id=? and auditar='SIM' 
+        GROUP BY enderecamento) d
+        where e.inventario_id=? AND e.descricao = d.enderecamento),
+        (select max(id) from enderecamento e, (select enderecamento from divergencia 
+        where inventario_id=? and auditar='SIM' 
+        GROUP BY enderecamento) d
+        where e.inventario_id=? AND e.descricao = d.enderecamento))
+      `
+      connection.query(sql, [inventario_id, inventario_id, inventario_id, inventario_id], (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal);
           return;
@@ -74,24 +84,25 @@ class Equipe extends Component {
   atualizaLista() {
     let connection = mysql.createConnection(env.config_mysql);
     let inventario_id = this.state.inventario_id;
-    let sql = "\
-    SELECT DISTINCT l.usuario_id 'id', u.nome\
-    FROM login l, usuario u\
-    WHERE l.login_status = 'ATIVO'\
-    AND l.usuario_id = u.id\
-    AND u.cargo = 'INVENTARIANTE'";
-    connection.query(sql, (error, results, fields)=>{
+    let sql = `
+      SELECT DISTINCT l.usuario_id 'id', u.nome
+      FROM login l, usuario u
+      WHERE l.login_status = 'ATIVO'
+      AND l.usuario_id = u.id
+      AND u.cargo = 'EXTERNO'
+    `
+    connection.query(sql, (error, nomes, fields)=>{
       if(error) {
         console.log(error.code,error.fatal);
         return;
       }
-      this.setState({nomes: results})
-      sql = "\
-      select ue.*, e.descricao, u.nome \
-      from usuario_enderecamento ue, enderecamento e, usuario u \
-      where ue.inventario_id = ? AND ue.tipo = 'INVENTARIO'\
-      AND ue.enderecamento_id = e.id\
-      AND ue.usuario_id = u.id";
+      this.setState({nomes})
+      sql = `
+        select ue.*, e.descricao, u.nome
+        from usuario_enderecamento ue, enderecamento e, usuario u 
+        where ue.inventario_id = ? AND ue.tipo = 'AUDITORIA2'
+        AND ue.enderecamento_id = e.id AND ue.usuario_id = u.id
+      `
       connection.query(sql, [inventario_id], (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal);
@@ -188,14 +199,21 @@ class Equipe extends Component {
         final
       );
       let connection = mysql.createConnection(env.config_mysql);
-      let sql = "\
-      SELECT id, descricao  FROM enderecamento\
-      WHERE inventario_id=? AND id >= (\
-      SELECT id FROM enderecamento\
-      WHERE inventario_id=? AND descricao=?)\
-      AND id <= ( SELECT id FROM enderecamento\
-      WHERE inventario_id=?  AND descricao=?)";
-      connection.query(sql, [inventario_id, inventario_id, inicial, inventario_id, final], (error, results, fields)=>{
+      let sql = `
+        select id, descricao
+        from enderecamento e, 
+          (select enderecamento from divergencia   where inventario_id=? and auditar='SIM'  GROUP BY enderecamento) d
+        where e.inventario_id=? AND e.descricao = d.enderecamento
+        AND e.id >= (
+          SELECT id FROM enderecamento
+          WHERE inventario_id=? AND descricao=?
+        )
+        AND e.id <= (
+          SELECT id FROM enderecamento
+          WHERE inventario_id=?  AND descricao=?
+        )
+      `
+      connection.query(sql, [inventario_id, inventario_id, inventario_id, inicial, inventario_id, final], (error, results, fields)=>{
         if(error) {
           console.log(error.code, error.fatal);
           return;
@@ -206,7 +224,7 @@ class Equipe extends Component {
             inventario_id,
             usuario_id,
             result.id,
-            'INVENTARIO'
+            'AUDITORIA2'
           ]);
           console.log('end:'+result.id)
           console.log('use:'+usuario_id)
@@ -241,13 +259,91 @@ class Equipe extends Component {
       console.log('limpar!')
     }
   }
+  cadastrarUsuario(e){
+    e.preventDefault()
+    let {cpf, password, nomeForm} = this.state
+    if (cpf && password && nomeForm) {
+      let usuario = [[nomeForm, cpf, 'NAO', 57, 4, 112, 'EXTERNO', 2, 'OUTROS']]
+      console.log(cpf,password,nomeForm)
+      let connection = mysql.createConnection(env.config_mysql)
+      let query = `
+        INSERT INTO usuario
+          (nome, cpf, pcd, bairro_id, estado_id, cidade_id, cargo, regime_id, sexo)
+        VALUES ?
+      `
+      connection.query(query, [usuario], (error, results, fields) => {
+        if(error){
+          console.log(error.code,error.fatal)
+          return
+        }
+        console.log(results.insertId)
+        let login = [[cpf, password, results.insertId, 'ATIVO']]
+        query = `
+          INSERT INTO login
+          (cpf, password, usuario_id, login_status)
+          VALUES ?
+        `
+        connection.query(query, [login], (error, results, fields) => {
+          if(error){
+            console.log(error.code,error.fatal)
+            return
+          }
+          this.atualizaLista();
+          connection.end()
+        })
+      })
+    } else {
+      console.log('Dados inválida!')
+    }
+
+
+  }
   render() {
     const thArray = ["Name", "Inicial", "Final","Actions"];
     const remove = <Tooltip id="remove_tooltip">Remove</Tooltip>;
+    const { cpf, password, nomeForm } = this.state;
     return (
     <div className="content">
-        <h1>Equipe</h1>
+        <h1>Equipe Externa</h1>
         <Container fluid>
+          <Row>
+            <Col>
+              <Form onSubmit={this.cadastrarUsuario}>
+                <Form.Row>
+                  <Form.Group as={Col} controlId="formGridCPF">
+                    <Form.Label>CPF</Form.Label>
+                    <MaskedFormControl type="numbe" 
+                      placeholder="CPF" mask='111.111.111-11' 
+                      name="cpf" onChange={this.handleChange} 
+                      value={cpf}
+                    />
+                  </Form.Group>
+
+                  <Form.Group as={Col} controlId="formGridPassword">
+                    <Form.Label>Senha</Form.Label>
+                    <Form.Control type="password" placeholder="******"
+                      name="password" 
+                      onChange={this.handleChange} 
+                      value={password}
+                    />
+                  </Form.Group>
+                </Form.Row>
+
+                <Form.Group controlId="formGridNome">
+                  <Form.Label>Nome</Form.Label>
+                  <Form.Control placeholder="Nome"
+                    name="nomeForm" 
+                    onChange={this.handleChange} 
+                    value={nomeForm}
+                  />
+                </Form.Group>
+
+                <Button variant="info" type="submit">
+                  Cadastrar
+                </Button>
+              </Form>
+            </Col>
+          </Row>
           <Row>
             <Col md={12}>
               <Form onSubmit={this.handleSubmit}>
@@ -288,10 +384,9 @@ class Equipe extends Component {
                 </ButtonToolbar>
               </Form>
             </Col>
-            <Col md={12} style={{
-                overflow: 'auto',
-                height: '360px'
-            }}>
+          </Row>
+          <Row>
+            <Col md={12}>
               <Table striped size="sm" responsive>
                 <thead>
                   <tr>
@@ -325,4 +420,4 @@ class Equipe extends Component {
   }
 }
 
-export default Equipe;
+export default Equipe2;

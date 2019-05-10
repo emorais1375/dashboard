@@ -28,10 +28,10 @@ class Divergencia extends Component {
   }
   gerarDivergencia(){
     const {inventario_id, organizar_por} = this.state
-    let ordem = "c_qtd ASC"
+    let ordem = "qtd_divergencia ASC"
     switch (organizar_por) {
       case "Valor":
-          ordem = 'valor_divergente ASC'
+          ordem = 'valor_divergente DESC'
         break;
       case "Quantidade":
           ordem = "qtd_divergencia ASC"
@@ -41,10 +41,12 @@ class Divergencia extends Component {
     if (inventario_id) {
       let connection = mysql.createConnection(env.config_mysql);
       let query = `
-        SELECT id, enderecamento, cod_barra, 
-          qtd_inventario, qtd_divergencia, valor_divergente, auditar 
+        SELECT base_id, cod_barra, saldo_estoque, (SUM(qtd_inventario)-saldo_estoque) qtd_divergencia, 
+        TRUNCATE(IF((SUM(qtd_inventario)-saldo_estoque)*valor_custo<0,(SUM(qtd_inventario)-saldo_estoque)*valor_custo*-1,(SUM(qtd_inventario)-saldo_estoque)*valor_custo),2) valor_divergente, auditar 
         FROM divergencia 
         WHERE inventario_id=? AND auditar != 'NAO PODE' 
+        GROUP BY cod_barra, saldo_estoque, valor_custo, auditar, base_id
+        HAVING qtd_divergencia !=0
         ORDER BY `+ ordem +`
       `
       connection.query(query, [inventario_id],(error, divergencia, fields) => {
@@ -66,7 +68,7 @@ class Divergencia extends Component {
     const target = ev.target
     const checked = target.checked
     const divergencia = this.state.divergencia.slice()
-    const id = divergencia[key].id
+    const base_id = divergencia[key].base_id
     const auditar = checked ? 'SIM' : 'NAO'
     let connection = mysql.createConnection(env.config_mysql)
     const query = `
@@ -75,10 +77,10 @@ class Divergencia extends Component {
         SET 
             auditar = ?
         WHERE 
-            id = ?
+            base_id = ?
     `
 
-    connection.query(query, [auditar, id], (error, results, fields) => {
+    connection.query(query, [auditar, base_id], (error, results, fields) => {
       if(error){
         console.log(error.code,error.fatal)
         return
@@ -98,7 +100,7 @@ class Divergencia extends Component {
     this.state.divergencia.map(p=>{
     	if (p.auditar==='SIM') {
     		texto = texto +' - ' + p.cod_barra + '\n'
-        div.push({cod_barra: p.cod_barra, qtd: p.qtd_divergencia})
+        div.push({base_id: p.base_id, cod_barra: p.cod_barra, qtd: p.saldo_estoque})
     	}
     })
     if (div.length) {
@@ -106,7 +108,7 @@ class Divergencia extends Component {
       alert(texto)
       localStorage.setItem('div1', JSON.stringify(div))
       console.log(localStorage.getItem('div1') || [])
-      // this.props.history.push('/audit1/dashboard')
+      this.props.history.push('/audit1/dashboard')
     } else {
       alert('Não foram selecionados itens para serem auditados.')
       console.log('Vazio!')
@@ -141,9 +143,7 @@ class Divergencia extends Component {
           		<Table striped size="sm" responsive>
                 <thead>
                 	<tr>
-                    <th>Enderecamento</th>
                     <th>EAN</th>
-                    <th>Inventário</th>
                     <th>Quantidade</th>
                     <th>Valor</th>
                 		<th>Auditoria</th>
@@ -151,10 +151,8 @@ class Divergencia extends Component {
                 </thead>
                 <tbody>
                 	{divergencia.map((prop,key)=>{
-                		return <tr key={prop.id}>
-                      <td>{prop.enderecamento}</td>
+                		return <tr key={prop.base_id}>
                       <td>{prop.cod_barra}</td>
-                      <td>{prop.qtd_inventario}</td>
                       <td>{prop.qtd_divergencia}</td>
                       <td>{prop.valor_divergente}</td>
     		        			<td>

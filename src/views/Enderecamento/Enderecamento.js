@@ -215,8 +215,11 @@ class Enderecamento extends Component {
                     </ButtonToolbar>
                 </Form>
             </Col>
-            <Col md={12}>
-                <Table responsive="sm" size="sm" striped>
+            <Col md={12} style={{
+                overflow: 'auto',
+                height: '383px'
+            }}>
+                <Table  striped>
                     <thead>
                         <tr>
                             {thArray.map((prop, key) => {

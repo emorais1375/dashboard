@@ -15,29 +15,48 @@ class Divergencia1 extends Component {
     super(props);
     this.state = {
     	divergencia: [],
-      inventario_id: localStorage.getItem('inv_id') || ''
+      organizar_por: 'Valor',
+      inventario_id: localStorage.getItem('inv_id') || '',
+      base: JSON.parse(localStorage.getItem('div1')) || []
     }
 
     this.handleChange = this.handleChange.bind(this);
+    this.handleChange2 = this.handleChange2.bind(this);
     this.auditar = this.auditar.bind(this);
   }
   componentDidMount() {
-    const {inventario_id} = this.state
-    console.log('DivergenciaPage, inventario_id:', inventario_id)
+    this.gerarDivergencia()
+  }
+  gerarDivergencia(){
+    const {inventario_id, organizar_por} = this.state
+    let ordem = "qtd_divergencia ASC"
+    switch (organizar_por) {
+      case "Valor":
+          ordem = 'valor_divergente DESC'
+        break;
+      case "Quantidade":
+          ordem = "qtd_divergencia ASC"
+        break;
+    }
     if (inventario_id) {
       let connection = mysql.createConnection(env.config_mysql);
-    	let query = `
-    		SELECT b.cod, b.qtd - c.qtd AS 'divergencia', false AS 'auditar'
-  			FROM 
-  				(SELECT cod_barra AS 'cod', COUNT(cod_barra) AS 'qtd' 
-  				FROM base WHERE inventario_id=?
-  				GROUP BY cod_barra) b,
-  				(SELECT cod_barra AS 'cod', COUNT(cod_barra) AS 'qtd' 
-  				FROM coleta 
-  				GROUP BY cod_barra) c 
-  			WHERE b.cod=c.cod
-    	`
-    	connection.query(query, [inventario_id],(error, divergencia, fields) => {
+      let query = `
+        select *, qtd_inventario-saldo_estoque qtd_divergencia, 'SIM' auditar,
+        TRUNCATE(IF((qtd_inventario-saldo_estoque)*valor_custo<0,(qtd_inventario-saldo_estoque)*valor_custo*-1,(qtd_inventario-saldo_estoque)*valor_custo),2) valor_divergente
+        from (
+          select base_id, COALESCE(t1.cod_barra,t2.cod_barra) cod_barra, qtd_inventario, saldo_estoque, valor_custo
+          from 
+            (select base_id, cod_barra, saldo_estoque, valor_custo
+            from divergencia where inventario_id=? AND auditar='SIM'
+            GROUP BY base_id, cod_barra, saldo_estoque, valor_custo) t1,
+            (select cod_barra, COUNT(cod_barra) qtd_inventario  
+            from coleta where inventario_id=? AND tipo_coleta='AUDITORIA1' 
+            GROUP BY cod_barra) t2
+          WHERE t1.cod_barra = t2.cod_barra) t
+        HAVING qtd_divergencia !=0
+        ORDER BY `+ ordem +`
+      `
+      connection.query(query, [inventario_id, inventario_id],(error, divergencia, fields) => {
         if(error){
             console.log(error.code,error.fatal)
             return
@@ -53,23 +72,27 @@ class Divergencia1 extends Component {
     const target = ev.target
     const checked = target.checked
     const divergencia = this.state.divergencia.slice()
-    divergencia[key].auditar = checked? 1 : 0
+    divergencia[key].auditar = checked ? 'SIM' : 'NAO'
     this.setState({divergencia})
   }
+  handleChange2(e) {
+    const organizar_por = e.target.value
+    this.setState({organizar_por}, ()=>this.gerarDivergencia())
+  }  
   auditar() {
     let texto = 'Auditar selecionados:\n'
     let div = []
     this.state.divergencia.map(p=>{
-      if (p.auditar) {
-        texto = texto +' - ' + p.cod + '\n'
-        div.push({cod_barra: p.cod, qtd: p.divergencia})
+      if (p.auditar==='SIM') {
+        texto = texto +' - ' + p.cod_barra + '\n'
+        div.push({base_id: p.base_id, cod_barra: p.cod_barra, saldo_estoque: p.saldo_estoque})
       }
     })
     if (div.length) {
       console.log(div)
       alert(texto)
       localStorage.setItem('div2', JSON.stringify(div))
-      console.log(localStorage.getItem('div1') || [])
+      console.log(localStorage.getItem('div2') || [])
       this.props.history.push('/audit2/dashboard')
     } else {
       alert('Não foram selecionados itens para serem auditados.')
@@ -88,33 +111,48 @@ class Divergencia1 extends Component {
                 Auditoria
               </Button>
             </Col>
+            <Col>
+              <Form.Group as={Col} controlId="formGridState">
+                <Form.Label>Organizar por:</Form.Label>
+                <Form.Control as="select"  
+                  onChange={this.handleChange2} 
+                  value={this.state.organizar_por}>
+                    <option>Valor</option>
+                    <option>Quantidade</option>
+                </Form.Control>
+              </Form.Group>
+            </Col>
+          </Row>
+          <Row>
             <Col md={12}>
-          		<Table striped size="sm" responsive>
+              <Table striped size="sm" responsive>
                 <thead>
-                	<tr>
-                		<th>Código</th>
-                		<th>Divergencia</th>
-                		<th>Ação</th>
+                  <tr>
+                    <th>EAN</th>
+                    <th>Quantidade</th>
+                    <th>Valor</th>
+                    <th>Auditoria</th>
                   </tr>
                 </thead>
                 <tbody>
-                	{divergencia.map((prop,key)=>{
-                		return <tr key={key}>
-                			<td>{prop.cod}</td>
-                			<td>{prop.divergencia}</td>
-    		        			<td>
-    		        				<Form.Check 
-    			        				checked={prop.auditar}
-    	                    onChange={e => this.handleChange(e, key)}
-    		        				/>
-    		        			</td>
-                		</tr>
-                	})}
+                  {divergencia.map((prop,key)=>{
+                    return <tr key={prop.base_id}>
+                      <td>{prop.cod_barra}</td>
+                      <td>{prop.qtd_divergencia}</td>
+                      <td>{prop.valor_divergente}</td>
+                      <td>
+                        <Form.Check 
+                          checked={prop.auditar==='SIM'?true:false}
+                          onChange={e => this.handleChange(e, key)}
+                        />
+                      </td>
+                    </tr>
+                  })}
                 </tbody>
               </Table>
             </Col>
           </Row>
-      	</Container>      
+        </Container>      
       </div>
     );
   }

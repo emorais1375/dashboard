@@ -15,7 +15,7 @@ import {
   InputGroup
 } from 'react-bootstrap'
 
-class Equipe extends Component {
+class Equipe1 extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -41,13 +41,20 @@ class Equipe extends Component {
     let {inventario_id} = this.state
     if (inventario_id) {
       let connection = mysql.createConnection(env.config_mysql);
-      let sql = "\
-      select descricao 'desc'\
-      from enderecamento\
-      where id IN (\
-      ( select min(id) from enderecamento where inventario_id=?),\
-      ( select max(id) from enderecamento where inventario_id=?))";
-      connection.query(sql, [inventario_id, inventario_id], (error, results, fields)=>{
+      let sql = `
+        select descricao 'desc'
+        from enderecamento
+        where id IN (
+        (select min(id) from enderecamento e, (select enderecamento from divergencia 
+        where inventario_id=? and auditar='SIM' 
+        GROUP BY enderecamento) d
+        where e.inventario_id=? AND e.descricao = d.enderecamento),
+        (select max(id) from enderecamento e, (select enderecamento from divergencia 
+        where inventario_id=? and auditar='SIM' 
+        GROUP BY enderecamento) d
+        where e.inventario_id=? AND e.descricao = d.enderecamento))
+      `
+      connection.query(sql, [inventario_id, inventario_id, inventario_id, inventario_id], (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal);
           return;
@@ -80,18 +87,18 @@ class Equipe extends Component {
     WHERE l.login_status = 'ATIVO'\
     AND l.usuario_id = u.id\
     AND u.cargo = 'INVENTARIANTE'";
-    connection.query(sql, (error, results, fields)=>{
+    connection.query(sql, (error, nomes, fields)=>{
       if(error) {
         console.log(error.code,error.fatal);
         return;
       }
-      this.setState({nomes: results})
-      sql = "\
-      select ue.*, e.descricao, u.nome \
-      from usuario_enderecamento ue, enderecamento e, usuario u \
-      where ue.inventario_id = ? AND ue.tipo = 'INVENTARIO'\
-      AND ue.enderecamento_id = e.id\
-      AND ue.usuario_id = u.id";
+      this.setState({nomes})
+      sql = `
+        select ue.*, e.descricao, u.nome
+        from usuario_enderecamento ue, enderecamento e, usuario u 
+        where ue.inventario_id = ? AND ue.tipo = 'AUDITORIA1'
+        AND ue.enderecamento_id = e.id AND ue.usuario_id = u.id
+      `
       connection.query(sql, [inventario_id], (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal);
@@ -188,14 +195,21 @@ class Equipe extends Component {
         final
       );
       let connection = mysql.createConnection(env.config_mysql);
-      let sql = "\
-      SELECT id, descricao  FROM enderecamento\
-      WHERE inventario_id=? AND id >= (\
-      SELECT id FROM enderecamento\
-      WHERE inventario_id=? AND descricao=?)\
-      AND id <= ( SELECT id FROM enderecamento\
-      WHERE inventario_id=?  AND descricao=?)";
-      connection.query(sql, [inventario_id, inventario_id, inicial, inventario_id, final], (error, results, fields)=>{
+      let sql = `
+        select id, descricao
+        from enderecamento e, 
+          (select enderecamento from divergencia   where inventario_id=? and auditar='SIM'  GROUP BY enderecamento) d
+        where e.inventario_id=? AND e.descricao = d.enderecamento
+        AND e.id >= (
+          SELECT id FROM enderecamento
+          WHERE inventario_id=? AND descricao=?
+        )
+        AND e.id <= (
+          SELECT id FROM enderecamento
+          WHERE inventario_id=?  AND descricao=?
+        )
+      `
+      connection.query(sql, [inventario_id, inventario_id, inventario_id, inicial, inventario_id, final], (error, results, fields)=>{
         if(error) {
           console.log(error.code, error.fatal);
           return;
@@ -206,7 +220,7 @@ class Equipe extends Component {
             inventario_id,
             usuario_id,
             result.id,
-            'INVENTARIO'
+            'AUDITORIA1'
           ]);
           console.log('end:'+result.id)
           console.log('use:'+usuario_id)
@@ -288,10 +302,7 @@ class Equipe extends Component {
                 </ButtonToolbar>
               </Form>
             </Col>
-            <Col md={12} style={{
-                overflow: 'auto',
-                height: '360px'
-            }}>
+            <Col md={12}>
               <Table striped size="sm" responsive>
                 <thead>
                   <tr>
@@ -325,4 +336,4 @@ class Equipe extends Component {
   }
 }
 
-export default Equipe;
+export default Equipe1;

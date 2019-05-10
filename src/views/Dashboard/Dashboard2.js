@@ -77,6 +77,7 @@ class Dashboard2 extends Component {
   }
   componentDidMount() {
     this.startClock();
+    this.lerColeta();
   }
   lerBase(){
     let {inventario_id} = this.state;
@@ -111,9 +112,11 @@ class Dashboard2 extends Component {
       let query = `
         SELECT cod_barra, count(cod_barra) AS 'qtd' 
         FROM coleta 
-        GROUP BY cod_barra;
+        WHERE inventario_id = ? AND tipo_coleta='AUDITORIA2'
+        GROUP BY cod_barra
+        ORDER BY qtd DESC
       `
-      connection.query(query ,(error, coleta, fields) => {
+      connection.query(query, [inventario_id], (error, coleta, fields) => {
         if(error){
             console.log(error.code,error.fatal)
             return
@@ -183,9 +186,9 @@ class Dashboard2 extends Component {
                     <tbody>
                       {base.map((prop, key) => {
                         return (
-                          <tr key={key}>
+                          <tr key={prop.base_id}>
                             <td>{prop.cod_barra}</td>
-                            <td>{prop.qtd}</td>
+                            <td>{prop.saldo_estoque}</td>
                           </tr>
                         );
                       })}

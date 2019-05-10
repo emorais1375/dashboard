@@ -457,7 +457,7 @@ body > .navbar-collapse[data-color="purple"]:after {
   transition-timing-function: linear,linear;
   -webkit-overflow-scrolling: touch; }
 
-.btn {
+/*.btn {
   border-width: 2px;
   background-color: transparent;
   font-weight: 400;
@@ -659,7 +659,7 @@ body > .navbar-collapse[data-color="purple"]:after {
       border-top-color: #FFFFFF; }
   .btn-danger .caret {
     border-top-color: #FF4A55; }
-
+*/
 .btn-neutral {
   border-color: #FFFFFF;
   color: #FFFFFF; }
@@ -1334,7 +1334,7 @@ body > .navbar-collapse[data-color="purple"]:after {
 .nav > li > a:focus {
   background-color: transparent; }
 
-.navbar {
+/*.navbar {
   border: 0;
   font-size: 16px;
   border-radius: 0; }
@@ -1500,7 +1500,7 @@ body > .navbar-collapse[data-color="purple"]:after {
   .navbar-default:not(.navbar-transparent) .btn-neutral:hover,
   .navbar-default:not(.navbar-transparent) .btn-neutral:active {
     color: #9A9A9A; }
-
+*/
 /*      Navbar with icons            */
 .navbar-icons.navbar .navbar-brand {
   margin-top: 12px;

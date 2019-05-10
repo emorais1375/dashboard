@@ -188,12 +188,16 @@ function startExpress () {
           enderecamento e
         WHERE 
           ue.inventario_id = ?
+        AND
+          ue.tipo = 'INVENTARIO'
+        AND
+          e.inventario_id = ?      
         AND 
           ue.usuario_id = ?
         AND 
           ue.enderecamento_id = e.id
       `
-      connection.query(query, [inventario_id, usuario_id], (error, results, fields)=>{
+      connection.query(query, [inventario_id, inventario_id, usuario_id], (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal)
           res.status(400).json({error:error.code})
@@ -269,6 +273,38 @@ function startExpress () {
       res.json(results)
       connection.end()
     })
+  })
+
+  server.get('/status_end', (req, res) => {
+    console.log('POST /status_end')
+    const {inventario_id, enderecamento_id, status} = req.query || ''
+    if (inventario_id && enderecamento_id && status) {
+      let values = [[inventario_id, enderecamento_id]]
+
+      let connection = mysql.createConnection(env.config_mysql)
+      let query = `
+        UPDATE 
+          usuario_enderecamento
+        SET 
+          status = ?
+        WHERE 
+          enderecamento_id = ?
+        AND
+          inventario_id = ?
+      `
+      connection.query(query, [status, enderecamento_id, inventario_id], (error, results, fields)=>{
+        if(error) {
+          console.log(error.code,error.fatal)
+          res.status(400).json({error:error.code})
+          return
+        }
+        res.json({msg: 'Enderecamento finalizado!'})
+        connection.end()
+      })
+    } else {
+      console.log('Dados inválido!')
+      res.json({msg: 'Dados inválido!'})
+    }
   })
 
   server.get('/', (req, res) => {

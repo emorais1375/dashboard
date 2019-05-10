@@ -78,16 +78,17 @@ class Dashboard1 extends Component {
   }
   componentDidMount() {
     this.startClock();
+    this.lerColeta();
   }
   lerBase() {
     let {inventario_id} = this.state;
     if (inventario_id) {
       let connection = mysql.createConnection(env.config_mysql);
       let query = `
-        SELECT cod_barra, count(cod_barra) AS 'qtd' 
-        FROM base 
-        WHERE inventario_id=?
-        GROUP BY cod_barra
+        SELECT base_id, cod_barra, saldo_estoque AS 'qtd'
+        FROM divergencia 
+        WHERE inventario_id=1 AND auditar='SIM'
+        GROUP BY base_id, cod_barra, saldo_estoque
       `
       connection.query(query, [inventario_id],(error, base, fields) => {
         if(error){
@@ -112,9 +113,11 @@ class Dashboard1 extends Component {
       let query = `
         SELECT cod_barra, count(cod_barra) AS 'qtd' 
         FROM coleta 
-        GROUP BY cod_barra;
+        WHERE inventario_id = ? AND tipo_coleta='AUDITORIA1'
+        GROUP BY cod_barra
+        ORDER BY qtd DESC
       `
-      connection.query(query ,(error, coleta, fields) => {
+      connection.query(query, [inventario_id] ,(error, coleta, fields) => {
         if(error){
             console.log(error.code,error.fatal)
             return
@@ -157,7 +160,7 @@ class Dashboard1 extends Component {
                     <tbody>
                       {coleta.map((prop, key) => {
                         return (
-                          <tr key={key}>
+                          <tr key={prop.cod_barra}>
                             <td>{prop.cod_barra}</td>
                             <td>{prop.qtd}</td>
                           </tr>
@@ -184,7 +187,7 @@ class Dashboard1 extends Component {
                     <tbody>
                       {base.map((prop, key) => {
                         return (
-                          <tr key={key}>
+                          <tr key={prop.base_id}>
                             <td>{prop.cod_barra}</td>
                             <td>{prop.qtd}</td>
                           </tr>
