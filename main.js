@@ -145,7 +145,7 @@ function startExpress () {
     let connection = mysql.createConnection(env.config_mysql)
     let query = `
       SELECT 
-        tipo_inventario, validade,
+        id inventario_id, tipo_inventario, validade,
         fabricacao, lote, itens_embalagem,
         fornecedor, ignorar_zero_esq,
         ignorar_zero_direita, marca

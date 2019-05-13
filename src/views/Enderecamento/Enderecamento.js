@@ -46,7 +46,7 @@ class Enderecamento extends Component {
                     e.inventario_id = ?
                 ORDER BY
                     e.id DESC 
-                LIMIT 10
+                -- LIMIT 10
             `
 
             connection.query(query, [inventario_id],(error, enderecamento, fields) => {

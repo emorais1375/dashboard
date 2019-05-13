@@ -23,13 +23,15 @@ constructor(props) {
     base: [],
     coleta: [],
     enderecamento: [],
+    enderecamentoCod: [],
     equipe: [],
     isPaused: true,
     horas: 0, minutos: 0, segundos: 0,
     isEnable: false, 
     timeFormat: '00:00:00',
     items: [], text: '',
-    showModalCod: false
+    showModalCod: false,
+    progressTotal: 0
   };
 
   this.playClock = this.playClock.bind(this);
@@ -212,8 +214,12 @@ lerEquipe() {
           console.log(error.code,error.fatal)
           return
       }
-      this.setState({ equipe })
-      console.log(equipe)
+      let progressTotal = 0
+      equipe.map(e => {
+        progressTotal = progressTotal + e.progress
+      })
+      progressTotal = (progressTotal/equipe.length).toFixed(1)
+      this.setState({ equipe, progressTotal })
       connection.end();
     })
   } else {
@@ -316,12 +322,34 @@ handleClose() {
   this.setState({ showModalCod: false });
 }
 
-handleShow() {
-  this.setState({ showModalCod: true });
+handleShow(ev, key) {
+  this.setState({ showModalCod: true, enderecamentoCod: [] });
+  let {inventario_id} = this.state;
+  if (inventario_id) {
+    let connection = mysql.createConnection(env.config_mysql);
+    let query = `
+      SELECT cod_barra, count(cod_barra) AS 'qtd' 
+      FROM coleta 
+      WHERE inventario_id = ? AND tipo_coleta='INVENTARIO'
+      AND enderecamento=?
+      GROUP BY cod_barra
+      ORDER BY qtd DESC
+    `
+    connection.query(query, [inventario_id, key] ,(error, enderecamentoCod, fields) => {
+      if(error){
+          console.log(error.code,error.fatal)
+          return
+      }
+      this.setState({ enderecamentoCod })
+      connection.end();
+    })
+  } else {
+    console.log('Vazio!')
+  }
 }
 
 render() {
-  const { base, coleta, timeFormat, isPaused, enderecamento, equipe } = this.state
+  const { base, coleta, timeFormat, isPaused, enderecamento, equipe, enderecamentoCod, progressTotal } = this.state
   return (
     <div className="content">
       <h1>Dashboard</h1>
@@ -338,7 +366,7 @@ render() {
                   {enderecamento.map(prop => {
                     return (
                       <Button variant={prop.status==='ATIVADO'?'secondary':'success'}
-                        onClick={this.handleShow}
+                        onClick={e => this.handleShow(e, prop.descricao)}
                         lg={3}
                         md={3}
                         sm={3} 
@@ -359,20 +387,25 @@ render() {
             <Card
               title="ATIVIDADE"
               content={
-                <div style={{
-                overflow: 'auto',
-                height: '250px'
-            }}>
-                  {equipe.map(prop => {
-                    return (
-                      <div key={prop.usuario_id}>
-                        <h6>{prop.nome}</h6>
-                        <ProgressBar variant="success" now={prop.progress} label={`${prop.progress}%`} />
-                      </div>
-                    );
-                  })}
+                <div>
+                  <div style={{
+                    overflow: 'auto',
+                    height: '187px'
+                    }}>
+                    {equipe.map(prop => {
+                      return (
+                        <div key={prop.usuario_id}>
+                          <h6>{prop.nome}</h6>
+                          <ProgressBar variant="success" now={prop.progress} label={`${prop.progress}%`} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                    <hr />
+                      <h6>Total</h6>
+                      <ProgressBar variant="success" now={progressTotal} label={`${progressTotal}%`} />
                 </div>
-              } 
+              }
             />
           </Col>
           <Col>
@@ -453,15 +486,34 @@ render() {
       </Container>
       <Modal show={this.state.showModalCod} onHide={this.handleClose}>
         <Modal.Header closeButton>
-          <Modal.Title>Modal heading</Modal.Title>
+          <Modal.Title>Códigos Inventariados</Modal.Title>
         </Modal.Header>
-        <Modal.Body>Woohoo, you're reading this text in a modal!</Modal.Body>
+        <Modal.Body>
+          <div style={{
+                overflow: 'auto',
+                height: '350px'
+            }}><Table striped>
+            <thead>
+              <tr>
+                <th>EAN</th>
+                <th>QUANT</th>
+              </tr>
+            </thead>
+            <tbody>
+              {enderecamentoCod.map((prop, key) => {
+                return (
+                  <tr key={key}>
+                    <td>{prop.cod_barra}</td>
+                    <td>{prop.qtd}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table></div>
+        </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={this.handleClose}>
-            Close
-          </Button>
-          <Button variant="primary" onClick={this.handleClose}>
-            Save Changes
+            Fechar
           </Button>
         </Modal.Footer>
       </Modal>
