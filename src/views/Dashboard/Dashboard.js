@@ -365,7 +365,18 @@ render() {
                 <ButtonGroup vertical size="sm">
                   {enderecamento.map(prop => {
                     return (
-                      <Button variant={prop.status==='ATIVADO'?'secondary':'success'}
+                      <Button variant={(() => {
+                        switch(prop.status) {
+                          case 'ATIVADO':
+                            return 'secondary';
+                          case 'CONCLUIDO':
+                            return 'success';
+                          case 'INICIADO':
+                            return 'warning';
+                          default:
+                            return 'secondary';
+                        }
+                      })()}
                         onClick={e => this.handleShow(e, prop.descricao)}
                         lg={3}
                         md={3}
