@@ -85,6 +85,7 @@ function startExpress () {
   const mysql = require('mysql')
   const env = require('./.env')
   const inventario_id = 1
+  const tipo_coleta = 'INVENTARIO'
 
   server.get('/login', (req, res) => {
     let cpf = req.query.cpf || ''
@@ -276,11 +277,10 @@ function startExpress () {
   })
 
   server.get('/status_end', (req, res) => {
-    console.log('POST /status_end')
+    console.log('GET /status_end')
     const {inventario_id, enderecamento_id, status} = req.query || ''
     if (inventario_id && enderecamento_id && status) {
       let values = [[inventario_id, enderecamento_id]]
-
       let connection = mysql.createConnection(env.config_mysql)
       let query = `
         UPDATE 
@@ -298,7 +298,7 @@ function startExpress () {
           res.status(400).json({error:error.code})
           return
         }
-        res.json({msg: 'Enderecamento finalizado!'})
+        res.json(results)
         connection.end()
       })
     } else {
@@ -307,8 +307,45 @@ function startExpress () {
     }
   })
 
+  server.delete('/coleta', (req, res) => {
+    console.log('DELETE /coleta')
+    const inventario_id  = req.body.inventario_id || ''
+    const tipo_coleta  = req.body.tipo_coleta || ''
+    const enderecamento  = req.body.enderecamento || ''
+    if (inventario_id && tipo_coleta && enderecamento) {
+      console.log(inventario_id, tipo_coleta, enderecamento)
+      let connection = mysql.createConnection(env.config_mysql)
+      let query = `
+        delete from coleta 
+        where inventario_id = ?
+        and tipo_coleta = ? 
+        and enderecamento = ?
+      `
+      connection.query(query, [inventario_id, tipo_coleta, enderecamento], (error, results, fields)=>{
+        if(error) {
+          console.log(error.code,error.fatal)
+          res.status(400).json({error:error.code})
+          return
+        }
+        res.json(results)
+        connection.end();
+      })
+    } else {
+      console.log('DELETE /coleta body inválido!')
+      res.json({error:'body inválido!'});
+    }
+  })
+
   server.get('/', (req, res) => {
     console.log("GET /")
     res.json({message:'Servidor funcionando!'})
+  })
+
+  server.get('/quit', (req,res) => {
+    console.log("GET /quit")
+    res.json({message:'closing..'})
+    setTimeout(() => {
+      server.close()
+    }, 3000)
   })
 }
