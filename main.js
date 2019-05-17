@@ -84,8 +84,11 @@ function startExpress () {
   const server = require('./server')
   const mysql = require('mysql')
   const env = require('./.env')
+
   const inventario_id = 1
   const tipo_coleta = 'INVENTARIO'
+  const cargo = 'INVENTARIANTE' // 'EXTERNO'
+  const controle = 'start' // 'pause' 'finalizado'
 
   server.get('/login', (req, res) => {
     let cpf = req.query.cpf || ''
@@ -100,7 +103,7 @@ function startExpress () {
       let connection = mysql.createConnection(env.config_mysql)
       let query = `
         SELECT DISTINCT 
-          l.usuario_id, l.username
+          l.usuario_id, l.username, ue.tipo tipo_coleta
         FROM 
           login l, usuario u, usuario_enderecamento ue
         WHERE 
@@ -108,20 +111,22 @@ function startExpress () {
         AND 
           l.usuario_id = u.id
         AND 
-          u.cargo = 'INVENTARIANTE'
+          u.cargo = ?
         AND 
           l.usuario_id = ue.usuario_id
         AND 
           ue.inventario_id = ?
+        AND
+          ue.tipo = ?
         AND 
           l.password = ?
         AND 
           l.cpf = ?
       `
-      connection.query(query, [inventario_id, pass, cpf], (error, results, fields)=>{
+      connection.query(query, [cargo, inventario_id, tipo_coleta, pass, cpf], (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal)
-          res.status(400).json({error:error.code})
+          res.json({"retorno": -1, "controle": controle, error:error.code})
           return
         }
         if (results.length) {
@@ -131,13 +136,13 @@ function startExpress () {
         }
         else {
           console.log('CPF ou Senha inválida!')
-          res.json({usuario_id: null,username: null,login: -1})
+          res.json({usuario_id: null,username: null,login: -1, tipo_coleta: null})
         }
         connection.end()
       })
     } else {
       console.log('CPF ou Senha inválida!')
-      res.json({usuario_id: null,username: null,login: -1})
+      res.json({usuario_id: null,username: null,login: -1, tipo_coleta: null})
     }
   })
 
@@ -156,7 +161,7 @@ function startExpress () {
     connection.query(query, [inventario_id], (error, results, fields)=>{
       if(error) {
         console.log(error.code,error.fatal)
-        res.status(400).json({error:error.code})
+        res.json({"retorno": -1, "controle": controle, error:error.code})
         return
       }
       res.json(results.length ? results[0] : {
@@ -190,18 +195,20 @@ function startExpress () {
         WHERE 
           ue.inventario_id = ?
         AND
-          ue.tipo = 'INVENTARIO'
+          ue.tipo = ?
         AND
-          e.inventario_id = ?      
+          e.inventario_id = ?
         AND 
           ue.usuario_id = ?
+        AND
+          ue.status != 'CONCLUIDO'
         AND 
           ue.enderecamento_id = e.id
       `
-      connection.query(query, [inventario_id, inventario_id, usuario_id], (error, results, fields)=>{
+      connection.query(query, [inventario_id, tipo_coleta, inventario_id, usuario_id], (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal)
-          res.status(400).json({error:error.code})
+          res.json({"retorno": -1, "controle": controle, error:error.code})
           return
         }
         res.json(results)
@@ -246,10 +253,10 @@ function startExpress () {
     connection.query(query, [values], (error, results, fields)=>{
       if(error) {
         console.log(error.code,error.fatal)
-        res.status(400).json({error:error.code})
+        res.json({"retorno": -1, "controle": controle, error:error.code})
         return
       }
-      res.json()
+      res.json({"retorno": 0, "controle": controle, results: results})
       connection.end()
     })
   })
@@ -280,6 +287,7 @@ function startExpress () {
     console.log('GET /status_end')
     const {inventario_id, enderecamento_id, status} = req.query || ''
     if (inventario_id && enderecamento_id && status) {
+      console.log(inventario_id,enderecamento_id,status)
       let values = [[inventario_id, enderecamento_id]]
       let connection = mysql.createConnection(env.config_mysql)
       let query = `
@@ -305,6 +313,65 @@ function startExpress () {
       console.log('Dados inválido!')
       res.json({msg: 'Dados inválido!'})
     }
+  })
+
+  server.post('/end_status', (req, res) => {
+    console.log('POST /end_status')
+    const coletas  = req.body || []
+    let values = []
+    let query = ""
+
+    for(var i=0; i< coletas.length; i++){
+      values.push(
+        coletas[i].status,
+        coletas[i].enderecamento_id,
+        coletas[i].inventario_id
+      )
+      query = query + "UPDATE usuario_enderecamento SET status = ? WHERE enderecamento_id = ? AND inventario_id = ?;"
+    }
+    console.log(values, query)
+
+
+    let connection = mysql.createConnection(env.config_mysql)
+    connection.query(query, values, (error, results, fields)=>{
+      if(error) {
+        console.log(error.code,error.fatal)
+        res.json({"retorno": -1, "controle": controle, error:error.code})
+        return
+      }
+      res.json({"retorno": 0, "controle": controle, results: results})
+      connection.end()
+    })
+  })
+
+  server.post('/end_delete', (req, res) => {
+    console.log('POST /end_delete')
+    const coletas  = req.body || []
+    let values = []
+    let query = ""
+
+    for(var i=0; i< coletas.length; i++){
+      values.push(
+        coletas[i].inventario_id,
+        coletas[i].tipo_coleta,
+        coletas[i].enderecamento,
+        coletas[i].data,
+        coletas[i].hora
+      )
+      query = query + "delete from coleta where inventario_id=? and tipo_coleta=? and enderecamento=? and data <= ? and hora <= ?;"
+    }
+    console.log(values, query)
+
+    let connection = mysql.createConnection(env.config_mysql)
+    connection.query(query, values, (error, results, fields)=>{
+      if(error) {
+        console.log(error.code,error.fatal)
+        res.json({"retorno": -1, "controle": controle, error:error.code})
+        return
+      }
+      res.json({"retorno": 0, "controle": controle, results: results})
+      connection.end()
+    })
   })
 
   server.delete('/coleta', (req, res) => {
