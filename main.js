@@ -4,6 +4,9 @@
 const {app, BrowserWindow} = require('electron');
 const path = require('path')
 const url = require('url')
+let controle = 'stop' // 'pause' 'play' 'finalizado'
+let inventario_id = 0
+let tipo_coleta = 'INVENTARIO'
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -85,64 +88,72 @@ function startExpress () {
   const mysql = require('mysql')
   const env = require('./.env')
 
-  const inventario_id = 1
-  const tipo_coleta = 'INVENTARIO'
-  const cargo = 'INVENTARIANTE' // 'EXTERNO'
-  const controle = 'start' // 'pause' 'finalizado'
+  //const inventario_id = 1
+  //const tipo_coleta = 'INVENTARIO'
+  // let cargo = tipo_coleta==='AUDITORIA2'?'EXTERNO':'INVENTARIANTE' // 'EXTERNO'
 
   server.get('/login', (req, res) => {
-    let cpf = req.query.cpf || ''
-    const pass = req.query.password || ''
-    console.log('GET /login?cpf='+cpf+'&password='+pass)
-    if (cpf.length === 11 && pass) {
-      cpf = cpf.split('')
-      cpf.splice( 3, 0, '.')
-      cpf.splice( 7, 0, '.')
-      cpf.splice(11, 0, '-')
-      cpf = cpf.join('')
-      let connection = mysql.createConnection(env.config_mysql)
-      let query = `
-        SELECT DISTINCT 
-          l.usuario_id, l.username, ue.tipo tipo_coleta
-        FROM 
-          login l, usuario u, usuario_enderecamento ue
-        WHERE 
-          l.login_status = 'ATIVO'
-        AND 
-          l.usuario_id = u.id
-        AND 
-          u.cargo = ?
-        AND 
-          l.usuario_id = ue.usuario_id
-        AND 
-          ue.inventario_id = ?
-        AND
-          ue.tipo = ?
-        AND 
-          l.password = ?
-        AND 
-          l.cpf = ?
-      `
-      connection.query(query, [cargo, inventario_id, tipo_coleta, pass, cpf], (error, results, fields)=>{
-        if(error) {
-          console.log(error.code,error.fatal)
-          res.json({"retorno": -1, "controle": controle, error:error.code})
-          return
-        }
-        if (results.length) {
-          let newresults = results[0]
-          newresults['login'] = 0
-          res.json(newresults)
-        }
-        else {
-          console.log('CPF ou Senha inválida!')
-          res.json({usuario_id: null,username: null,login: -1, tipo_coleta: null})
-        }
-        connection.end()
-      })
+
+      let cargo = tipo_coleta==='AUDITORIA2'?'EXTERNO':'INVENTARIANTE' // 'EXTERNO'
+      let cpf = req.query.cpf || ''
+      const pass = req.query.password || ''
+      console.log('GET /login?cpf='+cpf+'&password='+pass)
+    if (controle === 'play') {
+      if (cpf.length === 11 && pass) {
+        cpf = cpf.split('')
+        cpf.splice( 3, 0, '.')
+        cpf.splice( 7, 0, '.')
+        cpf.splice(11, 0, '-')
+        cpf = cpf.join('')
+        let connection = mysql.createConnection(env.config_mysql)
+        let query = `
+          SELECT DISTINCT 
+            l.usuario_id, l.username, ue.tipo tipo_coleta
+          FROM 
+            login l, usuario u, usuario_enderecamento ue
+          WHERE 
+            l.login_status = 'ATIVO'
+          AND 
+            l.usuario_id = u.id
+          AND 
+            u.cargo = ?
+          AND 
+            l.usuario_id = ue.usuario_id
+          AND 
+            ue.inventario_id = ?
+          AND
+            ue.tipo = ?
+          AND 
+            l.password = ?
+          AND 
+            l.cpf = ?
+        `
+        connection.query(query, [cargo, inventario_id, tipo_coleta, pass, cpf], (error, results, fields)=>{
+          if(error) {
+            console.log(error.code,error.fatal)
+            res.json({retorno: -1, controle, error:error.code})
+            return
+          }
+          if (results.length) {
+            let newresults = results[0]
+            newresults['retorno'] = 0
+            newresults['controle'] = controle
+            newresults['login'] = 0
+            res.json(newresults)
+          }
+          else {
+            console.log('CPF ou Senha inválida!')
+            res.json({retorno: -1, controle, usuario_id: null,username: null,login: -1, tipo_coleta: null})
+          }
+          connection.end()
+        })
+      } else {
+        console.log('CPF ou Senha inválida!')
+        res.json({retorno: -1, controle, usuario_id: null,username: null,login: -1, tipo_coleta: null})
+      }
     } else {
-      console.log('CPF ou Senha inválida!')
-      res.json({usuario_id: null,username: null,login: -1, tipo_coleta: null})
+      res.json({retorno: 0, controle, usuario_id: null,username: null,login: -1, tipo_coleta: null})
+      console.log(controle)
     }
   })
 
@@ -161,20 +172,29 @@ function startExpress () {
     connection.query(query, [inventario_id], (error, results, fields)=>{
       if(error) {
         console.log(error.code,error.fatal)
-        res.json({"retorno": -1, "controle": controle, error:error.code})
+        res.json({retorno: -1, controle, error:error.code})
         return
       }
-      res.json(results.length ? results[0] : {
-        "tipo_inventario": null,
-        "validade": null,
-        "fabricacao": null,
-        "lote": null,
-        "itens_embalagem": null,
-        "marca": null,
-        "fornecedor": null,
-        "ignorar_zero_esq": null,
-        "ignorar_zero_direita": null
-      })
+      if(results.length){
+        let newresults = results[0]
+        newresults['retorno'] = 0
+        newresults['controle'] = controle
+        res.json(newresults)
+      } else {
+        res.json({
+          "retorno": 0, 
+          "controle": controle,
+          "tipo_inventario": null,
+          "validade": null,
+          "fabricacao": null,
+          "lote": null,
+          "itens_embalagem": null,
+          "marca": null,
+          "fornecedor": null,
+          "ignorar_zero_esq": null,
+          "ignorar_zero_direita": null
+        })
+      }
       connection.end()
     })
   })
@@ -205,10 +225,11 @@ function startExpress () {
         AND 
           ue.enderecamento_id = e.id
       `
-      connection.query(query, [inventario_id, tipo_coleta, inventario_id, usuario_id], (error, results, fields)=>{
+      connection.query(query, [inventario_id, tipo_coleta, inventario_id, usuario_id], 
+        (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal)
-          res.json({"retorno": -1, "controle": controle, error:error.code})
+          res.json({retorno: -1, controle, error:error.code})
           return
         }
         res.json(results)
@@ -216,49 +237,55 @@ function startExpress () {
       });
     } else {
       console.log('usuario_id inválido!')
-      res.json([])
+      res.json({retorno: -1, controle})
     }
   })
 
   server.post('/coleta', (req, res) => {
     console.log('POST /coleta')
-    const coletas  = req.body || []
-    let values = []
+    if (controle === 'play') {
+      const coletas  = req.body || []
+      let values = []
 
-    for(var i=0; i< coletas.length; i++)
-      values.push([
-        coletas[i].inventario_id,
-        coletas[i].tipo_coleta,
-        coletas[i].usuario_id,
-        coletas[i].data,
-        coletas[i].hora,
-        coletas[i].enderecamento,
-        coletas[i].cod_barra,
-        coletas[i].validade,
-        coletas[i].fabricacao,
-        coletas[i].lote,
-        coletas[i].itens_embalagem,
-        coletas[i].marca,
-        coletas[i].fornecedor
-      ])
-
-    let connection = mysql.createConnection(env.config_mysql)
-    let query = `
-      INSERT INTO 
-        coleta (inventario_id, tipo_coleta, usuario_id, data, hora, enderecamento,
-                cod_barra, validade, fabricacao,
-                lote, itens_embalagem, marca, fornecedor)
-      VALUES ?
-    `
-    connection.query(query, [values], (error, results, fields)=>{
-      if(error) {
-        console.log(error.code,error.fatal)
-        res.json({"retorno": -1, "controle": controle, error:error.code})
-        return
-      }
-      res.json({"retorno": 0, "controle": controle, results: results})
-      connection.end()
-    })
+      for(var i=0; i< coletas.length; i++)
+        values.push([
+          coletas[i].inventario_id,
+          coletas[i].tipo_coleta,
+          coletas[i].usuario_id,
+          coletas[i].data,
+          coletas[i].hora,
+          coletas[i].enderecamento,
+          coletas[i].cod_barra,
+          coletas[i].validade,
+          coletas[i].fabricacao,
+          coletas[i].lote,
+          coletas[i].itens_embalagem,
+          coletas[i].marca,
+          coletas[i].fornecedor
+        ])
+      let connection = mysql.createConnection(env.config_mysql)
+      let query = `
+        INSERT INTO 
+          coleta (inventario_id, tipo_coleta, usuario_id, data, hora, enderecamento,
+                  cod_barra, validade, fabricacao,
+                  lote, itens_embalagem, marca, fornecedor)
+        VALUES ?
+      `
+      
+      console.log(values, query)
+      connection.query(query, [values], (error, results, fields)=>{
+        if(error) {
+          console.log(error.code,error.fatal)
+          res.json({retorno: -1, controle, error:error.code})
+          return
+        }
+        res.json({retorno: 0, controle, results})
+        connection.end()
+      })
+    } else {
+      res.json({retorno: 0, controle})
+      console.log(controle)
+    }
   })
 
   server.get('/base', (req, res) => {
@@ -275,7 +302,7 @@ function startExpress () {
     connection.query(query, [inventario_id], (error, results, fields)=>{
       if(error) {
         console.log(error.code,error.fatal)
-        res.status(400).json({error:error.code})
+        res.json({retorno: -1, controle, error:error.code})
         return
       }
       res.json(results)
@@ -283,123 +310,73 @@ function startExpress () {
     })
   })
 
-  server.get('/status_end', (req, res) => {
-    console.log('GET /status_end')
-    const {inventario_id, enderecamento_id, status} = req.query || ''
-    if (inventario_id && enderecamento_id && status) {
-      console.log(inventario_id,enderecamento_id,status)
-      let values = [[inventario_id, enderecamento_id]]
+  server.post('/end_status', (req, res) => {
+    console.log('POST /end_status')
+    if (controle === 'play') {
+      const coletas  = req.body || []
+      let values = []
+      let query = ""
+
+      for(var i=0; i< coletas.length; i++){
+        values.push(
+          coletas[i].status,
+          coletas[i].enderecamento_id,
+          coletas[i].inventario_id,
+          tipo_coleta
+        )
+        query = query + "UPDATE usuario_enderecamento SET status = ? WHERE enderecamento_id = ? AND inventario_id = ? AND tipo = ?;"
+      }
+      console.log(values, query)
+
+
       let connection = mysql.createConnection(env.config_mysql)
-      let query = `
-        UPDATE 
-          usuario_enderecamento
-        SET 
-          status = ?
-        WHERE 
-          enderecamento_id = ?
-        AND
-          inventario_id = ?
-      `
-      connection.query(query, [status, enderecamento_id, inventario_id], (error, results, fields)=>{
+      connection.query(query, values, (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal)
-          res.status(400).json({error:error.code})
+          res.json({retorno: -1, controle, error:error.code})
           return
         }
-        res.json(results)
+        res.json({retorno: 0, controle, results})
         connection.end()
       })
     } else {
-      console.log('Dados inválido!')
-      res.json({msg: 'Dados inválido!'})
+      res.json({retorno: 0, controle})
+      console.log(controle)
     }
-  })
-
-  server.post('/end_status', (req, res) => {
-    console.log('POST /end_status')
-    const coletas  = req.body || []
-    let values = []
-    let query = ""
-
-    for(var i=0; i< coletas.length; i++){
-      values.push(
-        coletas[i].status,
-        coletas[i].enderecamento_id,
-        coletas[i].inventario_id
-      )
-      query = query + "UPDATE usuario_enderecamento SET status = ? WHERE enderecamento_id = ? AND inventario_id = ?;"
-    }
-    console.log(values, query)
-
-
-    let connection = mysql.createConnection(env.config_mysql)
-    connection.query(query, values, (error, results, fields)=>{
-      if(error) {
-        console.log(error.code,error.fatal)
-        res.json({"retorno": -1, "controle": controle, error:error.code})
-        return
-      }
-      res.json({"retorno": 0, "controle": controle, results: results})
-      connection.end()
-    })
   })
 
   server.post('/end_delete', (req, res) => {
     console.log('POST /end_delete')
-    const coletas  = req.body || []
-    let values = []
-    let query = ""
+    if (controle === 'play') {
+      const coletas  = req.body || []
+      let values = []
+      let query = ""
 
-    for(var i=0; i< coletas.length; i++){
-      values.push(
-        coletas[i].inventario_id,
-        coletas[i].tipo_coleta,
-        coletas[i].enderecamento,
-        coletas[i].data,
-        coletas[i].hora
-      )
-      query = query + "delete from coleta where inventario_id=? and tipo_coleta=? and enderecamento=? and data <= ? and hora <= ?;"
-    }
-    console.log(values, query)
-
-    let connection = mysql.createConnection(env.config_mysql)
-    connection.query(query, values, (error, results, fields)=>{
-      if(error) {
-        console.log(error.code,error.fatal)
-        res.json({"retorno": -1, "controle": controle, error:error.code})
-        return
+      for(var i=0; i< coletas.length; i++){
+        values.push(
+          coletas[i].inventario_id,
+          coletas[i].tipo_coleta,
+          coletas[i].enderecamento,
+          coletas[i].data,
+          coletas[i].hora
+        )
+        query = query + "delete from coleta where inventario_id=? and tipo_coleta=? and enderecamento=? and data <= ? and hora <= ?;"
       }
-      res.json({"retorno": 0, "controle": controle, results: results})
-      connection.end()
-    })
-  })
+      console.log(values, query)
 
-  server.delete('/coleta', (req, res) => {
-    console.log('DELETE /coleta')
-    const inventario_id  = req.body.inventario_id || ''
-    const tipo_coleta  = req.body.tipo_coleta || ''
-    const enderecamento  = req.body.enderecamento || ''
-    if (inventario_id && tipo_coleta && enderecamento) {
-      console.log(inventario_id, tipo_coleta, enderecamento)
       let connection = mysql.createConnection(env.config_mysql)
-      let query = `
-        delete from coleta 
-        where inventario_id = ?
-        and tipo_coleta = ? 
-        and enderecamento = ?
-      `
-      connection.query(query, [inventario_id, tipo_coleta, enderecamento], (error, results, fields)=>{
+      connection.query(query, values, (error, results, fields)=>{
         if(error) {
           console.log(error.code,error.fatal)
-          res.status(400).json({error:error.code})
+          res.json({retorno: -1, controle, error:error.code})
           return
         }
-        res.json(results)
-        connection.end();
+        res.json({retorno: 0, controle, results})
+        connection.end()
       })
     } else {
-      console.log('DELETE /coleta body inválido!')
-      res.json({error:'body inválido!'});
+      res.json({retorno: 0, controle})
+      console.log(controle)
     }
   })
 
@@ -407,12 +384,16 @@ function startExpress () {
     console.log("GET /")
     res.json({message:'Servidor funcionando!'})
   })
-
-  server.get('/quit', (req,res) => {
-    console.log("GET /quit")
-    res.json({message:'closing..'})
-    setTimeout(() => {
-      server.close()
-    }, 3000)
-  })
 }
+const { ipcMain } = require('electron')
+ipcMain.on('asynchronous-message', (event, arg) => {
+  console.log('Controle: '+arg.controle) // prints "ping"
+  controle = arg.controle // 'start' 'pause' 'finalizado'
+  tipo_coleta = arg.tipo_coleta
+  event.sender.send('asynchronous-reply', 'pong')
+})
+ipcMain.on('set-inventario', (event, arg) => {
+  console.log('Inventario: '+arg) // prints "ping"
+  inventario_id = arg // 'start' 'pause' 'finalizado'
+})
+

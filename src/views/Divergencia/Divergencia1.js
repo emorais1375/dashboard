@@ -49,7 +49,7 @@ class Divergencia1 extends Component {
             (select base_id, cod_barra, saldo_estoque, valor_custo
             from divergencia where inventario_id=? AND auditar='SIM'
             GROUP BY base_id, cod_barra, saldo_estoque, valor_custo) t1,
-            (select cod_barra, COUNT(cod_barra) qtd_inventario  
+            (select cod_barra, SUM(itens_embalagem) qtd_inventario  
             from coleta where inventario_id=? AND tipo_coleta='AUDITORIA1' 
             GROUP BY cod_barra) t2
           WHERE t1.cod_barra = t2.cod_barra) t
@@ -72,8 +72,27 @@ class Divergencia1 extends Component {
     const target = ev.target
     const checked = target.checked
     const divergencia = this.state.divergencia.slice()
-    divergencia[key].auditar = checked ? 'SIM' : 'NAO'
-    this.setState({divergencia})
+    const base_id = divergencia[key].base_id
+    const auditar = checked ? 'SIM' : 'NAO'
+    let connection = mysql.createConnection(env.config_mysql)
+    const query = `
+        UPDATE 
+            divergencia
+        SET
+            auditar = ?
+        WHERE 
+            base_id = ?
+    `
+
+    connection.query(query, [auditar, base_id], (error, results, fields) => {
+      if(error){
+        console.log(error.code,error.fatal)
+        return
+      }
+      divergencia[key].auditar = auditar
+      this.setState({divergencia})
+      connection.end()
+    })
   }
   handleChange2(e) {
     const organizar_por = e.target.value
@@ -85,7 +104,7 @@ class Divergencia1 extends Component {
     this.state.divergencia.map(p=>{
       if (p.auditar==='SIM') {
         texto = texto +' - ' + p.cod_barra + '\n'
-        div.push({base_id: p.base_id, cod_barra: p.cod_barra, saldo_estoque: p.saldo_estoque})
+        div.push({base_id: p.base_id, cod_barra: p.cod_barra, qtd: p.saldo_estoque})
       }
     })
     if (div.length) {

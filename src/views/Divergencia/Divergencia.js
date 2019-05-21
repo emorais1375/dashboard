@@ -9,7 +9,8 @@ import {
   Row,
   Col
 } from "react-bootstrap"
-import ReactExport from "react-data-export";
+import Download from '../../components/Download'
+import ReactExport from "react-data-export"
 
 const ExcelFile = ReactExport.ExcelFile;
 const ExcelSheet = ReactExport.ExcelFile.ExcelSheet;
@@ -123,6 +124,7 @@ class Divergencia extends Component {
   	const { divergencia } = this.state
     return (
       <div className="content">
+        <Download />
         <ExcelFile filename="Relatorios" element={<button>Baixar Divergencia</button>}>
           <ExcelSheet name="Divergencia" data={divergencia}>
             <ExcelColumn label="EAN" value="cod_barra"/>

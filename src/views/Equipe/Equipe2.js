@@ -28,6 +28,7 @@ class Equipe2 extends Component {
       nomes: [],
       nome: 0, inicial: '', final: '', user_inv: [],
       inventario_id: localStorage.getItem('inv_id') || '',
+      base: JSON.parse(localStorage.getItem('div2')) || [],
       inicial_end: '', final_end: '',
       descricao: ''
     };
@@ -49,11 +50,11 @@ class Equipe2 extends Component {
         from enderecamento
         where id IN (
         (select min(id) from enderecamento e, (select enderecamento from divergencia 
-        where inventario_id=? and auditar='SIM' 
+        where inventario_id=? and auditar_externo='SIM' 
         GROUP BY enderecamento) d
         where e.inventario_id=? AND e.descricao = d.enderecamento),
         (select max(id) from enderecamento e, (select enderecamento from divergencia 
-        where inventario_id=? and auditar='SIM' 
+        where inventario_id=? and auditar_externo='SIM'
         GROUP BY enderecamento) d
         where e.inventario_id=? AND e.descricao = d.enderecamento))
       `

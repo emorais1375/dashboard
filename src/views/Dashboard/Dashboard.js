@@ -13,12 +13,15 @@ import {
 } from "react-bootstrap";
 import { Card } from "../../components/Card/Card";
 // import { Card } from 'react-bootstrap'
+const { ipcRenderer } = window.require('electron')
 
 class Dashboard extends Component {
 constructor(props) {
   super(props);
   this.state = {
     inventario_id: localStorage.getItem('inv_id') || '',
+    inventario_status: localStorage.getItem('inv_status') || '',
+    tipo_coleta: 'INVENTARIO',
     inventario: [],
     base: [],
     coleta: [],
@@ -66,14 +69,15 @@ startClock(){
         this.tick()
         this.lerColeta()
         this.lerEquipe()
-        this.lerEnd2()
+        this.lerEnd()
       }
     }, 1000
   ); 
   console.log('[interval] iniciado')
 }
 playClock(){
-
+  const {tipo_coleta} = this.state
+  ipcRenderer.send('asynchronous-message', {controle:'play', tipo_coleta:tipo_coleta})
   this.setState({"isPaused": false, "isEnable": true});
 
 }
@@ -88,6 +92,8 @@ stopClock(){
   // this.props.history.push('/admin/divergencia')
 }
 pauseClock(){
+  const {tipo_coleta} = this.state
+  ipcRenderer.send('asynchronous-message', {controle:'pause', tipo_coleta})
   this.setState({"isPaused": true, "isEnable": false});
 }
 timeFormater(time) {
@@ -100,7 +106,7 @@ componentDidMount() {
   this.startClock();
   this.lerBase();
   this.lerColeta();
-  this.lerEnd2();
+  this.lerEnd();
   this.lerEquipe();
 }
 componentWillUnmount() {
@@ -130,17 +136,18 @@ lerBase(){
   }
 }
 lerColeta(){
-  let {inventario_id} = this.state;
+  let {inventario_id, tipo_coleta} = this.state;
   if (inventario_id) {
     let connection = mysql.createConnection(env.config_mysql);
     let query = `
-      SELECT cod_barra, count(cod_barra) AS 'qtd' 
-      FROM coleta 
-      WHERE inventario_id = ? AND tipo_coleta='INVENTARIO'
+      SELECT cod_barra, SUM(itens_embalagem) as 'qtd'
+      FROM coleta
+      WHERE inventario_id = ?
+      AND tipo_coleta = ?
       GROUP BY cod_barra
       ORDER BY qtd DESC
     `
-    connection.query(query, [inventario_id] ,(error, coleta, fields) => {
+    connection.query(query, [inventario_id, tipo_coleta] ,(error, coleta, fields) => {
       if(error){
           console.log(error.code,error.fatal)
           return
@@ -153,39 +160,16 @@ lerColeta(){
   }
 }
 lerEnd() {
-  let {inventario_id} = this.state;
-  if (inventario_id) {
-    let connection = mysql.createConnection(env.config_mysql);
-    let query = `
-      SELECT id, descricao 
-      FROM enderecamento 
-      WHERE inventario_id=?
-      ORDER BY id DESC
-      -- LIMIT 40
-    `
-    connection.query(query, [inventario_id],(error, enderecamento, fields) => {
-      if(error){
-          console.log(error.code,error.fatal)
-          return
-      }
-      this.setState({ enderecamento })
-      connection.end();
-    })
-  } else {
-    console.log('Vazio!')
-  }  
-}
-lerEnd2() {
-  let {inventario_id} = this.state;
+  let {inventario_id, tipo_coleta} = this.state;
   if (inventario_id) {
     let connection = mysql.createConnection(env.config_mysql);
     let query = `
       select e.id, descricao, status
       from usuario_enderecamento ue, enderecamento e 
-      where ue.inventario_id=? and tipo='INVENTARIO' 
+      where ue.inventario_id=? and tipo=? 
       and enderecamento_id = e.id
     `
-    connection.query(query, [inventario_id],(error, enderecamento, fields) => {
+    connection.query(query, [inventario_id, tipo_coleta],(error, enderecamento, fields) => {
       if(error){
           console.log(error.code,error.fatal)
           return
@@ -227,7 +211,7 @@ lerEquipe() {
   }  
 }
 inserirDivergencia() {
-  let {inventario_id} = this.state;
+  let {inventario_id, tipo_coleta} = this.state;
   if (inventario_id) {
     let connection = mysql.createConnection(env.config_mysql);
 
@@ -245,10 +229,10 @@ inserirDivergencia() {
           saldo_estoque, qtd_inventario  
         )
         SELECT 
-          CASE
-          WHEN base_id IS NULL THEN 'NAO PODE'
-          WHEN enderecamento IS NULL  THEN 'NAO PODE'
-          ELSE 'NAO' END auditar,
+        CASE
+        WHEN base_id IS NULL THEN 'NAO PODE'
+        WHEN enderecamento IS NULL  THEN 'NAO PODE'
+        ELSE 'NAO' END auditar,
           
           
           
@@ -266,9 +250,9 @@ inserirDivergencia() {
               WHERE inventario_id = ?
               ) b
               LEFT OUTER JOIN (
-              SELECT inventario_id, enderecamento, cod_barra, COUNT(cod_barra) qtd_inventario
+              SELECT inventario_id, enderecamento, cod_barra, SUM(itens_embalagem) qtd_inventario
               FROM coleta 
-              WHERE inventario_id = ? AND tipo_coleta='INVENTARIO'
+              WHERE inventario_id = ? AND tipo_coleta = ?
               GROUP BY enderecamento, cod_barra
               ) c
               ON b.cod_barra = c.cod_barra
@@ -283,15 +267,15 @@ inserirDivergencia() {
               WHERE inventario_id = ?
               ) b
               RIGHT OUTER JOIN (
-              SELECT inventario_id, enderecamento, cod_barra, COUNT(cod_barra) qtd_inventario
+              SELECT inventario_id, enderecamento, cod_barra, SUM(itens_embalagem) qtd_inventario
               FROM coleta 
-              WHERE inventario_id = ? AND tipo_coleta='INVENTARIO'
+              WHERE inventario_id = ? AND tipo_coleta = ?
               GROUP BY enderecamento, cod_barra
               ) c
               ON b.cod_barra = c.cod_barra
             ) A
       `
-      connection.query(query , [inventario_id, inventario_id, inventario_id, inventario_id], (error, results, fields) => {
+      connection.query(query , [inventario_id, inventario_id, tipo_coleta, inventario_id, inventario_id, tipo_coleta], (error, results, fields) => {
         if(error){
             console.log(error.code,error.fatal)
             return
@@ -324,18 +308,19 @@ handleClose() {
 
 handleShow(ev, key) {
   this.setState({ showModalCod: true, enderecamentoCod: [] });
-  let {inventario_id} = this.state;
+  let {inventario_id, tipo_coleta} = this.state;
   if (inventario_id) {
     let connection = mysql.createConnection(env.config_mysql);
     let query = `
-      SELECT cod_barra, count(cod_barra) AS 'qtd' 
-      FROM coleta 
-      WHERE inventario_id = ? AND tipo_coleta='INVENTARIO'
-      AND enderecamento=?
+      SELECT cod_barra, SUM(itens_embalagem) AS 'qtd'
+      FROM coleta
+      WHERE inventario_id = ?
+      AND tipo_coleta = ?
+      AND enderecamento = ?
       GROUP BY cod_barra
       ORDER BY qtd DESC
     `
-    connection.query(query, [inventario_id, key] ,(error, enderecamentoCod, fields) => {
+    connection.query(query, [inventario_id, tipo_coleta, key] ,(error, enderecamentoCod, fields) => {
       if(error){
           console.log(error.code,error.fatal)
           return

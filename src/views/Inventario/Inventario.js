@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+const { ipcRenderer } = window.require('electron')
 import mysql from 'mysql';
 import env from '../../../.env'
 
@@ -36,7 +37,8 @@ class Inventario extends Component {
   				data_agendamento as 'data',
   				hora_agendamento as 'hora',
   				agendamento_status as 'status',
-          i.tipo_inventario
+					i.tipo_inventario,
+					inventario_status
   			FROM 
   				inventario i, agendamento a 
   			WHERE 
@@ -57,11 +59,13 @@ class Inventario extends Component {
   	}
   }
 
-  abrirInventario(e, inv_id, inv_tipo) {
+  abrirInventario(e, inv_id, inv_tipo, inv_status) {
     console.log('inv_id:',inv_id)
     console.log('inv_tipo:',inv_tipo)
     localStorage.setItem('inv_id', inv_id)
     localStorage.setItem('inv_tipo', inv_tipo)
+		localStorage.setItem('inv_status', inv_status)
+		ipcRenderer.send('set-inventario', inv_id)
     this.props.history.push('/admin/dashboard')
   }
 
@@ -87,7 +91,7 @@ class Inventario extends Component {
               			<td>{prop.data} - {prop.hora}</td>
               			<td>{prop.status}</td>
               			<td>
-                      <Button variant="info" size="sm" onClick={e => this.abrirInventario(e, prop.id, prop.tipo_inventario)}>
+                      <Button variant="info" size="sm" onClick={e => this.abrirInventario(e, prop.id, prop.tipo_inventario, prop.inventario_status)}>
                         Inventário
                       </Button>
               			</td>
