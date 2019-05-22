@@ -41,7 +41,7 @@ class Divergencia1 extends Component {
     if (inventario_id) {
       let connection = mysql.createConnection(env.config_mysql);
       let query = `
-        select *, qtd_inventario-saldo_estoque qtd_divergencia, 'SIM' auditar,
+        select *, qtd_inventario-saldo_estoque qtd_divergencia, 'NAO' auditar,
         TRUNCATE(IF((qtd_inventario-saldo_estoque)*valor_custo<0,(qtd_inventario-saldo_estoque)*valor_custo*-1,(qtd_inventario-saldo_estoque)*valor_custo),2) valor_divergente
         from (
           select base_id, COALESCE(t1.cod_barra,t2.cod_barra) cod_barra, qtd_inventario, saldo_estoque, valor_custo
@@ -79,12 +79,13 @@ class Divergencia1 extends Component {
         UPDATE 
             divergencia
         SET
-            auditar = ?
+            auditar = ?,
+            auditar_externo = ?
         WHERE 
             base_id = ?
     `
 
-    connection.query(query, [auditar, base_id], (error, results, fields) => {
+    connection.query(query, [auditar, auditar, base_id], (error, results, fields) => {
       if(error){
         console.log(error.code,error.fatal)
         return

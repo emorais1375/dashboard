@@ -203,7 +203,7 @@ class Equipe2 extends Component {
       let sql = `
         select id, descricao
         from enderecamento e, 
-          (select enderecamento from divergencia   where inventario_id=? and auditar='SIM'  GROUP BY enderecamento) d
+          (select enderecamento from divergencia   where inventario_id=? and auditar_externo='SIM'  GROUP BY enderecamento) d
         where e.inventario_id=? AND e.descricao = d.enderecamento
         AND e.id >= (
           SELECT id FROM enderecamento

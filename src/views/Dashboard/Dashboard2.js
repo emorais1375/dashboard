@@ -11,6 +11,7 @@ import {
   ButtonGroup,
   Modal
  } from "react-bootstrap";
+ import Download2 from '../../components/Download2'
  import { Card } from "../../components/Card/Card";
  // import { Card } from 'react-bootstrap'
  const { ipcRenderer } = window.require('electron')
@@ -68,6 +69,8 @@ class Dashboard2 extends Component {
         if(!this.state.isPaused){
           this.tick()
           this.lerColeta()
+          this.lerEquipe()
+          this.lerEnd()
         }
       }, 1000
     ); 
@@ -332,6 +335,7 @@ class Dashboard2 extends Component {
     const { base, coleta, timeFormat, isPaused, enderecamento, equipe, enderecamentoCod, progressTotal } = this.state
     return (
       <div className="content">
+        <Download2 />
         <h1>Dashboard</h1>
         <Container fluid>
           <Row>
