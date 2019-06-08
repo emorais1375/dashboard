@@ -14,6 +14,7 @@ class Divergencia1 extends Component {
 	constructor(props){
     super(props);
     this.state = {
+      checkAll: false,
     	divergencia: [],
       organizar_por: 'Valor',
       inventario_id: localStorage.getItem('inv_id') || '',
@@ -68,6 +69,26 @@ class Divergencia1 extends Component {
       console.log('Vazio!')
     }
   }
+
+  handleChangeCheckAll(ev){
+    const check = ev.target.checked?true:false
+    this.setState({checkAll:check})
+    const divergencia = this.state.divergencia.slice()
+    
+    this.setState({divergencia:this.getChangedDivergencia(divergencia, check)})
+    
+  }
+  
+  getChangedDivergencia(divergencia, check){
+    const auditar = check ? 'SIM' : 'NAO'
+    for(var i=0; i<divergencia.length; i++){
+      divergencia[i].auditar = auditar
+      console.log(divergencia[i].auditar)
+    }
+    return divergencia
+  }
+
+
   handleChange(ev, key) {
     const target = ev.target
     const checked = target.checked
@@ -92,6 +113,7 @@ class Divergencia1 extends Component {
     //   }
       divergencia[key].auditar = auditar
       this.setState({divergencia})
+      this.setState({checkAll: false})
     //   connection.end()
     // })
   }
@@ -136,7 +158,7 @@ class Divergencia1 extends Component {
     }
   }
   render() {
-  	const { divergencia } = this.state
+  	const { divergencia, checkAll } = this.state
     return (
       <div className="content">
         <h1>Divergencia</h1>
@@ -167,7 +189,13 @@ class Divergencia1 extends Component {
                     <th>EAN</th>
                     <th>Quantidade</th>
                     <th>Valor</th>
-                    <th>Auditoria</th>
+                    <th>
+                        <Form.Check
+                          label="Auditoria"
+                          onChange={e => this.handleChangeCheckAll(e)}
+                          checked = {checkAll}
+    		        				/>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -178,8 +206,8 @@ class Divergencia1 extends Component {
                       <td>{prop.valor_divergente}</td>
                       <td>
                         <Form.Check 
-                          checked={prop.auditar==='SIM'?true:false}
-                          onChange={e => this.handleChange(e, key)}
+                          checked={prop.auditar==='SIM'?true:checkAll?true:false}
+    	                    onChange={e => this.handleChange(e, key)}
                         />
                       </td>
                     </tr>

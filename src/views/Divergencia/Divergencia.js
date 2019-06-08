@@ -20,6 +20,7 @@ class Divergencia extends Component {
 	constructor(props){
     super(props);
     this.state = {
+      checkAll: false,
     	divergencia: [],
       organizar_por: 'Valor',
       inventario_id: localStorage.getItem('inv_id') || ''
@@ -61,18 +62,40 @@ class Divergencia extends Component {
             return
         }
         this.setState({divergencia})
+
         connection.end();
       })
     } else {
       console.log('Vazio!')
     }
+
   }
+  
+  handleChangeCheckAll(ev){
+    const check = ev.target.checked?true:false
+    this.setState({checkAll:check})
+    const divergencia = this.state.divergencia.slice()
+    
+    this.setState({divergencia:this.getChangedDivergencia(divergencia, check)})
+    
+  }
+  
+  getChangedDivergencia(divergencia, check){
+    const auditar = check ? 'SIM' : 'NAO'
+    for(var i=0; i<divergencia.length; i++){
+      divergencia[i].auditar = auditar
+      console.log(divergencia[i].auditar)
+    }
+    return divergencia
+  }
+
   handleChange(ev, key) {
     const target = ev.target
     const checked = target.checked
     const divergencia = this.state.divergencia.slice()
     // const base_id = divergencia[key].base_id
     const auditar = checked ? 'SIM' : 'NAO'
+    
     // let connection = mysql.createConnection(env.config_mysql)
     // const query = `
     //     UPDATE 
@@ -90,6 +113,7 @@ class Divergencia extends Component {
     //   }
       divergencia[key].auditar = auditar
       this.setState({divergencia})
+      this.setState({checkAll: false})
       // connection.end()
     // })
   }
@@ -133,7 +157,7 @@ class Divergencia extends Component {
     }
   }
   render() {
-  	const { divergencia } = this.state
+  	const { divergencia, checkAll } = this.state
     return (
       <div className="content">
         <Download />
@@ -155,7 +179,7 @@ class Divergencia extends Component {
             </Col>
             <Col>
               <Form.Group as={Col} controlId="formGridState">
-                <Form.Label>Organizar por:</Form.Label>
+                <Form.Label>Organizar por:{checkAll}</Form.Label>
                 <Form.Control as="select"  
                   onChange={this.handleChange2} 
                   value={this.state.organizar_por}>
@@ -173,18 +197,25 @@ class Divergencia extends Component {
                     <th>EAN</th>
                     <th>Quantidade</th>
                     <th>Valor</th>
-                		<th>Auditoria</th>
+                		<th>
+                        <Form.Check
+                          label="Auditoria"
+                          onChange={e => this.handleChangeCheckAll(e)}
+                          checked = {checkAll}
+    		        				/>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                 	{divergencia.map((prop,key)=>{
+                    
                 		return <tr key={prop.base_id}>
                       <td>{prop.cod_barra}</td>
                       <td>{prop.qtd_divergencia}</td>
                       <td>{prop.valor_divergente}</td>
     		        			<td>
-    		        				<Form.Check 
-    			        				checked={prop.auditar==='SIM'?true:false}
+    		        				<Form.Check
+                          checked={prop.auditar==='SIM'?true:checkAll?true:false}
     	                    onChange={e => this.handleChange(e, key)}
     		        				/>
     		        			</td>
