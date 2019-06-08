@@ -67,34 +67,31 @@ class Divergencia extends Component {
       console.log('Vazio!')
     }
   }
-  salvarDivergencia(){
-
-  }
   handleChange(ev, key) {
     const target = ev.target
     const checked = target.checked
     const divergencia = this.state.divergencia.slice()
-    const base_id = divergencia[key].base_id
+    // const base_id = divergencia[key].base_id
     const auditar = checked ? 'SIM' : 'NAO'
-    let connection = mysql.createConnection(env.config_mysql)
-    const query = `
-        UPDATE 
-            divergencia
-        SET 
-            auditar = ?
-        WHERE 
-            base_id = ?
-    `
+    // let connection = mysql.createConnection(env.config_mysql)
+    // const query = `
+    //     UPDATE 
+    //         divergencia
+    //     SET 
+    //         auditar = ?
+    //     WHERE 
+    //         base_id = ?
+    // `
 
-    connection.query(query, [auditar, base_id], (error, results, fields) => {
-      if(error){
-        console.log(error.code,error.fatal)
-        return
-      }
+    // connection.query(query, [auditar, base_id], (error, results, fields) => {
+    //   if(error){
+    //     console.log(error.code,error.fatal)
+    //     return
+    //   }
       divergencia[key].auditar = auditar
       this.setState({divergencia})
-      connection.end()
-    })
+      // connection.end()
+    // })
   }
   handleChange2(e) {
     const value = e.target.value
@@ -103,13 +100,28 @@ class Divergencia extends Component {
   auditar() {
 		let texto = 'Auditar selecionados:\n'
     let div = []
+    let values = []
+    let query = ""
     this.state.divergencia.map(p=>{
     	if (p.auditar==='SIM') {
     		texto = texto +' - ' + p.cod_barra + '\n'
         div.push({base_id: p.base_id, cod_barra: p.cod_barra, qtd: p.saldo_estoque})
+        values.push(
+          p.auditar,
+          p.base_id
+        )
+        query = query + "UPDATE divergencia SET auditar = ? WHERE base_id = ?"
     	}
     })
-    if (div.length) {
+    let connection = mysql.createConnection(env.config_mysql)
+    connection.query(query, values, (error, results, fields) => {
+      if(error){
+        console.log(error.code,error.fatal)
+        return
+      }
+      connection.end()
+    })
+    if (values.length) {
       console.log(div)
       alert(texto)
       localStorage.setItem('div1', JSON.stringify(div))
