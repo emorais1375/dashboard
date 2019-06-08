@@ -160,8 +160,10 @@ class Divergencia extends Component {
   	const { divergencia, checkAll } = this.state
     return (
       <div className="content">
-        <Download />
-        <ExcelFile filename="Relatorios" element={<button>Baixar Divergencia</button>}>
+        <Row>
+        <div class="p-2"></div>
+        <div class="p-2"><Download /></div>
+        <div class="p-2"> <ExcelFile filename="Relatorios" element={<Button variant="info" onClick={this.auditar}>Baixar Divergencia</Button>}>
           <ExcelSheet name="Divergencia" data={divergencia}>
             <ExcelColumn label="EAN" value="cod_barra"/>
             <ExcelColumn label="Saldo" value="saldo_estoque"/>
@@ -169,15 +171,18 @@ class Divergencia extends Component {
             <ExcelColumn label="Valor" value="valor_divergente"/>
           </ExcelSheet>
         </ExcelFile>
+        </div>
+        </Row>
         <h1>Divergencia</h1>
         <Container fluid>
           <Row>
-            <Col lg={4} md={6}>
+            <Col lg={4} md={4} sm={4}>
               <Button variant="info" onClick={this.auditar}>
                 Auditoria
               </Button>
             </Col>
-            <Col>
+            <Col lg={5} md={4} sm={4}></Col>
+            <Col lg={3} md={4} sm={4}>
               <Form.Group as={Col} controlId="formGridState">
                 <Form.Label>Organizar por:{checkAll}</Form.Label>
                 <Form.Control as="select"  

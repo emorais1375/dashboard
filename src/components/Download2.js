@@ -293,7 +293,7 @@ export default class Download2 extends React.Component {
     render() {
         const { confronto, rlDivergencia, itensNaoContados, contagem } = this.state
         return (
-            <ExcelFile element={<button>Download Data</button>}>
+            <ExcelFile element={<Button variant="info" onClick={this.auditar}>Download Data</Button>}>
                 <ExcelSheet data={confronto} name="Confronto">
                     <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
                     <ExcelColumn label="SETOR" value="setor_secao"/>

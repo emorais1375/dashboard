@@ -2,8 +2,7 @@ import React, { Component } from "react";
 const { ipcRenderer } = window.require('electron')
 import mysql from 'mysql';
 import env from '../../../.env'
-
-import InventNavbar from "../../components/Navbars/InventNavbar"
+import InventNavbar from "../../components/Navbars/InventNavBar"
 import {
 	Container,
 	Table,

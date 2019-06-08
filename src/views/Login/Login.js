@@ -2,7 +2,7 @@ import React, { Component } from "react"
 import mysql from 'mysql'
 import env from '../../../.env'
 
-import LoginNavbar from "../../components/Navbars/LoginNavbar"
+import LoginNavbar from "../../components/Navbars/LoginNavBar"
 import MaskedFormControl from 'react-bootstrap-maskedinput'
 import {
   Button,
@@ -15,7 +15,7 @@ class Login extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      cpf:'234.234.234-23', password:'1234', usuario:[]
+      cpf:'009.441.122-00', password:'1234', usuario:[]
     }
     this.handleChange = this.handleChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -67,6 +67,7 @@ class Login extends Component {
             <LoginNavbar />
             <br/>
             <br/>
+            <div class="d-flex justify-content-center">
                 <Card bg="light" style={{ width: '18rem' }}>
                     <Card.Header>Login</Card.Header>
                     <Card.Body className="p-3">
@@ -95,6 +96,7 @@ class Login extends Component {
                         </Form>
                     </Card.Body>
                 </Card>
+                </div>
                 <br />
         </div>
         );

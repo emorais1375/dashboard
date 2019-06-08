@@ -164,12 +164,13 @@ class Divergencia1 extends Component {
         <h1>Divergencia</h1>
         <Container fluid>
           <Row>
-            <Col lg={4} md={6}>
+            <Col lg={4} md={4} sm={4}>
               <Button variant="info" onClick={this.auditar}>
                 Auditoria
               </Button>
             </Col>
-            <Col>
+            <Col lg={5} md={4} sm={4}></Col>
+            <Col lg={3} md={4} sm={4}>
               <Form.Group as={Col} controlId="formGridState">
                 <Form.Label>Organizar por:</Form.Label>
                 <Form.Control as="select"  

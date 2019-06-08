@@ -7,6 +7,12 @@ const ExcelFile = ReactExport.ExcelFile;
 const ExcelSheet = ReactExport.ExcelFile.ExcelSheet;
 const ExcelColumn = ReactExport.ExcelFile.ExcelColumn;
 
+import {
+
+	Button
+
+} from "react-bootstrap"
+
 export default class Download extends React.Component {
     constructor(props) {
         super(props);
@@ -246,7 +252,7 @@ export default class Download extends React.Component {
     render() {
         const { confronto, rlDivergencia, itensNaoContados } = this.state
         return (
-            <ExcelFile element={<button>Download Data</button>}>
+            <ExcelFile element={<Button variant="info" onClick={this.auditar}>Download Data</Button>}>
                 <ExcelSheet data={confronto} name="Confronto">
                     <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
                     <ExcelColumn label="SETOR" value="setor_secao"/>

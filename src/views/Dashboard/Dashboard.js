@@ -408,10 +408,12 @@ render() {
             <Card
               content={
                 <div>
-                  <h6>{timeFormat}</h6>
-                  <Button size="sm" variant="info" disabled={isPaused?false:true} onClick={this.playClock}>Play</Button>
-                  <Button size="sm" variant="info" disabled={isPaused?true:false} onClick={this.pauseClock}>Pause</Button>
-                  <Button size="sm" variant="info" onClick={this.stopClock}>Stop</Button>
+                <div class="row p-1"><h6>{timeFormat}</h6></div>
+                <div class="row">  
+                  <div class="p-1"><Button size="sm" variant="info" disabled={isPaused?false:true} onClick={this.playClock}>Play</Button></div>
+                  <div class="p-1"><Button size="sm" variant="info" disabled={isPaused?true:false} onClick={this.pauseClock}>Pause</Button></div>
+                  <div class="p-1"><Button size="sm" variant="info" onClick={this.stopClock}>Stop</Button></div>
+                </div>
                 </div>
               }
             />

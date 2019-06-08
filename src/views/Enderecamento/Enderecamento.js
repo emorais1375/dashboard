@@ -210,8 +210,10 @@ class Enderecamento extends Component {
                         </Form.Group>
                     </Form.Row>
                     <ButtonToolbar>
-                        <Button as="input" variant="info" type="submit" value="Salvar"/>
-                        <Button as="input" variant="info" type="button" value="Cancelar" onClick={this.handleCancel}/>
+                        
+                    <div class="p-2"><Button as="input" variant="info" type="submit" value=" Salvar "/></div>
+                    <div class="p-2"><Button as="input" variant="secondary" type="button" value=" Cancelar " onClick={this.handleCancel}/></div>
+
                     </ButtonToolbar>
                 </Form>
             </Col>
