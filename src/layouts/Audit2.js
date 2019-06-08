@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { Route, Switch } from "react-router-dom";
 import routes from "../routes";
-import Audit2Navbar from "../components/Navbars/Audit2Navbar"
+import Audit2Navbar from "../components/Navbars/Audit2NavBar"
 
 class Audit2 extends Component {
   render() {
