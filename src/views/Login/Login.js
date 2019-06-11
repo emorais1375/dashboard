@@ -8,14 +8,18 @@ import {
   Button,
   Form,
   Card,
-  ButtonToolbar
+  ButtonToolbar,
+  Modal,
+  Row,
+  Col
 } from 'react-bootstrap'
 
 class Login extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      cpf:'009.441.122-00', password:'1234', usuario:[]
+    
+      cpf:'009.441.122-00', password:'1234', usuario:[], showMessageErro:false, messageErro:''
     }
     this.handleChange = this.handleChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -44,6 +48,8 @@ class Login extends Component {
       connection.query(query, [cpf, password], (error, results, fields) => {
         if(error){
           console.log(error.code,error.fatal)
+          this.setState({messageErro: 'Não foi possível realizar login, tente novamente mais tarde'})
+          this.handleShowMessageErro()
           return
         }
         if (results.length) {
@@ -52,16 +58,27 @@ class Login extends Component {
           this.props.history.push('/inventario')
         } else {
           console.log('CPF:'+cpf+' ou Senha:'+password+' inválida!')
+          this.setState({messageErro: 'CPF ou senha inválidos, tente novamente'})
+          this.handleShowMessageErro()
         }
         connection.end()
       })
     } else {
-      console.log('CPF:'+cpf+' ou Senha:'+password+' inválida!')
+      this.setState({messageErro: 'CPF ou senha inválidos, tente novamente'})
+      this.handleShowMessageErro()
     }
   }
 
+  handleCloseMessageErro(){
+    this.setState({showMessageErro: false})
+  }
+
+  handleShowMessageErro(){
+    this.setState({showMessageErro: true})
+  }
+
   render() {
-        const { validated, cpf, password } = this.state;
+        const { validated, cpf, password, showMessageErro, messageErro } = this.state;
         return (
         <div>
             <LoginNavbar />
@@ -98,6 +115,23 @@ class Login extends Component {
                 </Card>
                 </div>
                 <br />
+                <Modal
+                  size="sm"
+                  show={showMessageErro}
+                  onHide={this.handleCloseMessageErro.bind(this)}
+                  aria-labelledby="example-modal-sizes-title-sm"
+                >
+                  <Modal.Header closeButton>
+                    <h5>Erro ao logar</h5>
+
+                  </Modal.Header>
+                  <Modal.Body>
+                    {messageErro}
+                  </Modal.Body>
+                  <Modal.Footer>
+                    <Button variant="info" onClick={this.handleCloseMessageErro.bind(this)}>OK</Button>
+                  </Modal.Footer>
+                </Modal>
         </div>
         );
   }
