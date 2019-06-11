@@ -283,8 +283,8 @@ class Equipe extends Component {
                   </Form.Group>
                 </Form.Row>
                 <ButtonToolbar>
-                <div class="p-2"><Button as="input" variant="secondary" type="submit" value="Salvar"/></div>
-                <div class="p-2"><Button as="input" variant="info" type="button" value="Cancelar" onClick={this.handleCancel}/></div>
+                <div class="p-2"><Button as="input" variant="info" type="submit" value="Salvar"/></div>
+                <div class="p-2"><Button as="input" variant="secondary" type="button" value="Cancelar" onClick={this.handleCancel}/></div>
                 </ButtonToolbar>
               </Form>
             </Col>

@@ -84,7 +84,6 @@ class Divergencia extends Component {
     const auditar = check ? 'SIM' : 'NAO'
     for(var i=0; i<divergencia.length; i++){
       divergencia[i].auditar = auditar
-      console.log(divergencia[i].auditar)
     }
     return divergencia
   }
@@ -93,29 +92,10 @@ class Divergencia extends Component {
     const target = ev.target
     const checked = target.checked
     const divergencia = this.state.divergencia.slice()
-    // const base_id = divergencia[key].base_id
     const auditar = checked ? 'SIM' : 'NAO'
-    
-    // let connection = mysql.createConnection(env.config_mysql)
-    // const query = `
-    //     UPDATE 
-    //         divergencia
-    //     SET 
-    //         auditar = ?
-    //     WHERE 
-    //         base_id = ?
-    // `
-
-    // connection.query(query, [auditar, base_id], (error, results, fields) => {
-    //   if(error){
-    //     console.log(error.code,error.fatal)
-    //     return
-    //   }
-      divergencia[key].auditar = auditar
-      this.setState({divergencia})
-      this.setState({checkAll: false})
-      // connection.end()
-    // })
+    divergencia[key].auditar = auditar
+    this.setState({divergencia})
+    this.setState({checkAll: false})
   }
   handleChange2(e) {
     const value = e.target.value
@@ -126,35 +106,42 @@ class Divergencia extends Component {
     let div = []
     let values = []
     let query = ""
-    this.state.divergencia.map(p=>{
-    	if (p.auditar==='SIM') {
-    		texto = texto +' - ' + p.cod_barra + '\n'
-        div.push({base_id: p.base_id, cod_barra: p.cod_barra, qtd: p.saldo_estoque})
-        values.push(
-          p.auditar,
-          p.base_id
-        )
-        query = query + "UPDATE divergencia SET auditar = ? WHERE base_id = ?"
-    	}
+    new Promise((resolve, reject) => {
+      this.state.divergencia.map(p=>{
+        if (p.auditar==='SIM') {
+          texto = texto +' - ' + p.cod_barra + '\n'
+          div.push({base_id: p.base_id, cod_barra: p.cod_barra, qtd: p.saldo_estoque})
+          values.push(
+            p.auditar,
+            p.base_id
+          )
+          query = query + "UPDATE divergencia SET auditar = ? WHERE base_id = ?;"
+        }
+      })
+      resolve()
     })
-    let connection = mysql.createConnection(env.config_mysql)
-    connection.query(query, values, (error, results, fields) => {
-      if(error){
-        console.log(error.code,error.fatal)
+    .then(() => {
+      let connection = mysql.createConnection(env.config_mysql)
+      connection.query(query, values, (error, results, fields) => {
+        if(error){
+          console.log(error.code,error.fatal)
+          return
+        }
+        console.log('Update divergencia')
+        connection.end()
         return
-      }
-      connection.end()
+      })
     })
-    if (values.length) {
-      console.log(div)
-      alert(texto)
-      localStorage.setItem('div1', JSON.stringify(div))
-      console.log(localStorage.getItem('div1') || [])
-      this.props.history.push('/audit1/dashboard')
-    } else {
-      alert('Não foram selecionados itens para serem auditados.')
-      console.log('Vazio!')
-    }
+    .then(() => {
+      if (values.length) {
+        alert(texto)
+        localStorage.setItem('div1', JSON.stringify(div))
+        this.props.history.push('/audit1/dashboard')
+      } else {
+        alert('Não foram selecionados itens para serem auditados.')
+        console.log('Vazio!')
+      }
+    })
   }
   render() {
   	const { divergencia, checkAll } = this.state

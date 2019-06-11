@@ -7,6 +7,12 @@ const ExcelFile = ReactExport.ExcelFile;
 const ExcelSheet = ReactExport.ExcelFile.ExcelSheet;
 const ExcelColumn = ReactExport.ExcelFile.ExcelColumn;
 
+import {
+
+	Button
+
+} from "react-bootstrap"
+
 export default class Download2 extends React.Component {
     constructor(props) {
         super(props);
@@ -98,7 +104,7 @@ export default class Download2 extends React.Component {
     (
         SELECT
             cod_barra, SUM(itens_embalagem) qtd_inventario, GROUP_CONCAT(enderecamento) enderecamento
-        FROM coleta where inventario_id=?
+        FROM coleta where inventario_id=? and tipo_coleta = 'INVENTARIO'
         GROUP BY cod_barra
     ) c
     ON b.cod_barra = c.cod_barra
@@ -124,7 +130,7 @@ export default class Download2 extends React.Component {
     (
         SELECT
             cod_barra, SUM(itens_embalagem) qtd_inventario, GROUP_CONCAT(enderecamento) enderecamento
-        FROM coleta where inventario_id=? 
+        FROM coleta where inventario_id=? and tipo_coleta = 'INVENTARIO'
         GROUP BY cod_barra
     ) c
     ON b.cod_barra = c.cod_barra) t where qtd_divergente != 0 AND enderecamento is NULL
@@ -286,7 +292,7 @@ export default class Download2 extends React.Component {
                 return
             }
             this.setState({confronto})
-            console.log(confronto)
+            // console.log(confronto)
             connection.end();
         })
     }

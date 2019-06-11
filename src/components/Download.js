@@ -30,6 +30,7 @@ export default class Download extends React.Component {
         this.gerarItensNaoContados();
     }
     gerarItensNaoContados(){
+        let {inventario_id} = this.state;
         let connection = mysql.createConnection(env.config_mysql);
         let query = `
     select 
@@ -53,12 +54,12 @@ export default class Download extends React.Component {
         descricao_setor_secao, setor_secao, grupo, familia, subfamilia,
         cod_barra, referencia, cod_interno, descricao_item,
         saldo_estoque, valor_custo, valor_venda
-    FROM base) b
+    FROM base where inventario_id=?) b
     LEFT OUTER JOIN
     (
         SELECT
             cod_barra, SUM(itens_embalagem) qtd_inventario, GROUP_CONCAT(enderecamento) enderecamento
-        FROM coleta 
+        FROM coleta where inventario_id=? and tipo_coleta = 'INVENTARIO'
         GROUP BY cod_barra
     ) c
     ON b.cod_barra = c.cod_barra
@@ -79,17 +80,17 @@ export default class Download extends React.Component {
         descricao_setor_secao, setor_secao, grupo, familia, subfamilia,
         cod_barra, referencia, cod_interno, descricao_item,
         saldo_estoque, valor_custo, valor_venda
-    FROM base) b
+    FROM base where inventario_id=?) b
     RIGHT OUTER JOIN
     (
         SELECT
             cod_barra, SUM(itens_embalagem) qtd_inventario, GROUP_CONCAT(enderecamento) enderecamento
-        FROM coleta 
+        FROM coleta where inventario_id=? and tipo_coleta = 'INVENTARIO' 
         GROUP BY cod_barra
     ) c
     ON b.cod_barra = c.cod_barra) t where qtd_divergente != 0 AND enderecamento is NULL
         `
-        connection.query(query, (error, itensNaoContados, fields) => {
+        connection.query(query, [inventario_id, inventario_id, inventario_id, inventario_id],(error, itensNaoContados, fields) => {
             if(error){
                 console.log(error.code,error.fatal)
                 return
@@ -245,7 +246,7 @@ export default class Download extends React.Component {
                 return
             }
             this.setState({confronto})
-            console.log(confronto)
+            // console.log(confronto)
             connection.end();
         })
     }
