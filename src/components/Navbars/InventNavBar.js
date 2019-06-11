@@ -9,7 +9,7 @@ import {
   NavItem
 } from "react-bootstrap";
 
-import logo from "../../assets/img/logo.svg";
+import logo from "../../assets/img/logo.png";
 
 class InventNavbar extends Component {
   render() {

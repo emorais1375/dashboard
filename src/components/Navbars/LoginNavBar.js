@@ -9,7 +9,7 @@ import {
   NavItem
 } from "react-bootstrap";
 
-import logo from "../../assets/img/logo.svg";
+import logo from "../../assets/img/logo.png";
 
 class LoginNavbar extends Component {
   render() {
@@ -18,7 +18,6 @@ class LoginNavbar extends Component {
         <Navbar.Brand>
           <img
             src={logo}
-            width="30"
             height="30"
             className="d-inline-block align-top"
             alt="React Bootstrap logo"
