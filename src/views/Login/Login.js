@@ -123,7 +123,6 @@ class Login extends Component {
                 >
                   <Modal.Header closeButton>
                     <h5>Erro ao logar</h5>
-
                   </Modal.Header>
                   <Modal.Body>
                     {messageErro}
