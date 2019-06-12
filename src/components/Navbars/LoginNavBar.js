@@ -21,8 +21,7 @@ class LoginNavbar extends Component {
             height="30"
             className="d-inline-block align-top"
             alt="React Bootstrap logo"
-          />
-        {' Arko Systems'}</Navbar.Brand>
+          /></Navbar.Brand>
       </Navbar>
     );
   }

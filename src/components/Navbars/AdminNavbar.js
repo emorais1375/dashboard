@@ -18,12 +18,10 @@ class AdminNavbar extends Component {
         <Navbar.Brand>
           <img
             src={logo}
-            width="30"
             height="30"
             className="d-inline-block align-top"
             alt="React Bootstrap logo"
-          />
-        {' Arko Systems'}</Navbar.Brand>
+          /></Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">

@@ -18,12 +18,10 @@ class InventNavbar extends Component {
         <Navbar.Brand>
           <img
             src={logo}
-            width="30"
             height="30"
             className="d-inline-block align-top"
             alt="React Bootstrap logo"
-          />
-        {' Arko Systems'}</Navbar.Brand>
+          /></Navbar.Brand>
         <Navbar.Collapse className="justify-content-end">
           <Button variant="outline-info" href="#/auth/login" onClick={()=>localStorage.clear()}>Sair</Button>
         </Navbar.Collapse>
