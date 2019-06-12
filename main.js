@@ -1,12 +1,67 @@
 'use strict';
 
 // Import parts of electron to use
-const {app, BrowserWindow} = require('electron');
+const {app, BrowserWindow, net} = require('electron');
 const path = require('path')
 const url = require('url')
 let controle = 'stop' // 'pause' 'play' 'finalizado'
 let inventario_id = 0
 let tipo_coleta = 'INVENTARIO'
+var nedb = require('nedb');
+var mysql = require('mysql');
+const env = require('./.env')
+
+function get_table_mysql(table_name) {
+  let connection = mysql.createConnection(env.config_mysql);
+  connection.query('SELECT * FROM ' + table_name +';', [],(error, results, fields) => {
+    if(error){
+        console.log(error.code,error.fatal)
+        return
+    }
+    connection.end();
+    console.log(results);
+    return results
+  });
+}
+
+
+var databases = [
+  {name:'login', db : new nedb({filename: 'login.db', autoload: true})},
+  {name:'inventario', inventario_db : new nedb({filename: 'inventario.db', autoload: true})},
+  {name:'base', base_db : get_table_mysql('base')}, //new nedb({filename: 'base.db', autoload: true})},
+  {name:'coleta', coleta_db : get_table_mysql('coleta')}, //new nedb({filename: 'coleta.db', autoload: true})},
+  {name:'usuarioenderecamento', usuario_enderecamento_db : get_table_mysql('usuario_enderecamento')}, //new nedb({filename: 'usuario_enderecamento.db', autoload: true})},
+  {name:'enderecamento', enderecamento_db :  get_table_mysql('enderecamento')},//new nedb({filename: 'enderecamento.db', autoload: true})},
+  {name:'divergencia', divergencia_db : get_table_mysql('divergencia')},//new nedb({filename: 'divergencia.db', autoload: true})} 
+]
+/*
+var PouchDB = require('pouchdb');
+var db = new PouchDB('importacaoTeste');
+var remoteCouch = false;
+let url_server_pouch = 'https://arkodb-server.herokuapp.com/arko_teste_server';
+
+//replica o banco do servidor, para o banco local
+db.replicate.from(url_server_pouch).on('complete', function(info) {
+        console.log("trouxe os dados");
+        console.log(info);
+    });
+
+// ids_inventarios é um array
+function pegaRegistrosInventarios(ids_inventarios){
+    db.find({
+        selector: {
+            // os valores no array, representam os valores do inventario
+          inventario: {$in:ids_inventarios}
+          }
+      }).then(function (result) {
+        console.log(result.docs);
+      }).catch(function (err) {
+        // ouch, an error
+        console.log(err);
+      });
+}
+*/
+
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -20,6 +75,7 @@ if ( process.defaultApp || /[\\/]electron-prebuilt[\\/]/.test(process.execPath) 
 
 function createWindow() {
   startExpress();
+  loadDB();
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 1024, height: 768, show: false
@@ -385,6 +441,31 @@ function startExpress () {
     res.json({message:'Servidor funcionando!'})
   })
 }
+function loadDB(){
+  databases.forEach(db => {
+    var data ='';
+    console.log('-----calling api '+db.name+'------');
+    var request = net.request('http://arko.devemandamento.com/arkowebyii/web/server/' + db.name)
+    request.on('response', (response) => {
+      response.on('data', (chunk) => {
+        data += chunk;
+      })
+      response.on('end', () => {
+          data = JSON.parse(data);
+          db.db.remove({}, {multi:true})
+          db.db.insert(data, function(err){
+            if(err)return console.log(err); //caso ocorrer algum erro        
+            console.log("dados carregados de " + db.name);
+          });
+      })
+      response.on('error', (error) => {
+        console.log(`ERROR: ${JSON.stringify(error)}`)
+      })
+    })
+    request.end()  
+  });
+}
+
 const { ipcMain } = require('electron')
 ipcMain.on('asynchronous-message', (event, arg) => {
   console.log('Controle: '+arg.controle) // prints "ping"

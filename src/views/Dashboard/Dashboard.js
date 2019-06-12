@@ -1,6 +1,9 @@
 import React, { Component } from "react";
 import mysql from 'mysql';
 import env from '../../../.env'
+import nedb from 'nedb'
+var base_db = new nedb({filename: 'base.db', autoload: true})
+var coleta_db = new nedb({filename: 'coleta.db', autoload: true})
 import { 
   Container, 
   Row, 
@@ -114,6 +117,10 @@ componentWillUnmount() {
 lerBase(){
   let {inventario_id} = this.state;
   if (inventario_id) {
+    base_db.find({inventario_id: inventario_id}).sort({ saldo_estoque: 1 }).exec(function(err, base){
+      this.setState({ base })
+    }.bind(this));
+    /*
     let connection = mysql.createConnection(env.config_mysql);
     let query = `
       SELECT id, cod_barra, saldo_estoque AS 'qtd' 
@@ -129,6 +136,7 @@ lerBase(){
       this.setState({ base })
       connection.end();
     })
+    */
   } else {
     console.log('Vazio!')
   }
@@ -136,6 +144,8 @@ lerBase(){
 lerColeta(){
   let {inventario_id, tipo_coleta} = this.state;
   if (inventario_id) {
+    
+    /*
     let connection = mysql.createConnection(env.config_mysql);
     let query = `
       SELECT cod_barra, SUM(itens_embalagem) as 'qtd'
@@ -153,6 +163,7 @@ lerColeta(){
       this.setState({ coleta })
       connection.end();
     })
+    */
   } else {
     console.log('Vazio!')
   }
