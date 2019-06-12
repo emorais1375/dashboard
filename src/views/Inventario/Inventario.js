@@ -4,6 +4,7 @@ import mysql from 'mysql';
 import env from '../../../.env'
 import nedb from 'nedb'
 var inventario_db = new nedb({filename: 'inventario.db', autoload: true})
+var agendamento_db = new nedb({filename: 'agendamento.db', autoload: true})
 
 import InventNavbar from "../../components/Navbars/InventNavBar"
 import {
@@ -31,16 +32,36 @@ class Inventario extends Component {
 
   componentDidMount() {
 		const {usuario_coordenador_id} = this.state
-		console.log(usuario_coordenador_id)
-  	if (usuario_coordenador_id) {
-			inventario_db.find({usuario_coordenador_id:parseInt(usuario_coordenador_id)},function(err, lista_inventario){				
-				lista_inventario.forEach(inv => {
-					inv['data'] = '12/12';
-					inv['hora'] = '12:12';
-					inv['status'] = 'ATIVO'
-				});
-				this.setState({inventarios:lista_inventario})
-			}.bind(this))
+		var lerDoBanco = new Promise(function(resolve, reject){
+			if (usuario_coordenador_id) {
+				var results = [];
+				inventario_db.find({usuario_coordenador_id:parseInt(usuario_coordenador_id)},function(err, lista_inventario){	
+						lista_inventario.forEach(inv => {
+						var res = {id:inv.id, data:'',hora:'',status:'',tipo_inventario:inv.tipo_inventario,inventario_status:inv.inventario_status}
+						agendamento_db.findOne({id:parseInt(inv.agendamento_id)}, function(err, agend){
+							if(agend){
+								Object.assign(res, {data: agend.data_agendamento});
+								Object.assign(res, {hora: agend.hora_agendamento});
+								Object.assign(res, {status: agend.agendamento_status});
+							}
+						}.bind(res))
+						results.push(res);
+					});
+				}.bind(results))
+					console.log(results)
+					resolve(results);
+				} else {
+					console.log('Vazio!')
+					reject(Error("It broke"));
+				}
+		});
+		lerDoBanco.then(function(result) {
+			this.setState({inventarios:result})
+			console.log(this.state.inventarios); // "Stuff worked!"
+		}.bind(this), function(err) {
+			console.log(err); // Error: "It broke"
+		});
+
 			/*
       let connection = mysql.createConnection(env.config_mysql);
   		let query = `
@@ -67,9 +88,6 @@ class Inventario extends Component {
 	      connection.end();
 			})
 			*/
-  	} else {
-  		console.log('Vazio!')
-  	}
   }
 
   abrirInventario(e, inv_id, inv_tipo, inv_status) {
@@ -102,6 +120,7 @@ class Inventario extends Component {
               </thead>
               <tbody>
               	{inventarios.map(prop=>{
+									console.log(prop)
               		return <tr key={prop.id}>
               			<td>{prop.id}</td>
 										<td>{prop.tipo_inventario}</td>
