@@ -2,6 +2,8 @@ import React, { Component } from "react";
 const { ipcRenderer } = window.require('electron')
 import mysql from 'mysql';
 import env from '../../../.env'
+import nedb from 'nedb'
+var inventario_db = new nedb({filename: 'inventario.db', autoload: true})
 
 import InventNavbar from "../../components/Navbars/InventNavBar"
 import {
@@ -28,8 +30,18 @@ class Inventario extends Component {
   }
 
   componentDidMount() {
-  	const {usuario_coordenador_id} = this.state
+		const {usuario_coordenador_id} = this.state
+		console.log(usuario_coordenador_id)
   	if (usuario_coordenador_id) {
+			inventario_db.find({usuario_coordenador_id:parseInt(usuario_coordenador_id)},function(err, lista_inventario){				
+				lista_inventario.forEach(inv => {
+					inv['data'] = '12/12';
+					inv['hora'] = '12:12';
+					inv['status'] = 'ATIVO'
+				});
+				this.setState({inventarios:lista_inventario})
+			}.bind(this))
+			/*
       let connection = mysql.createConnection(env.config_mysql);
   		let query = `
   			SELECT 
@@ -53,7 +65,8 @@ class Inventario extends Component {
 	      }
 	      this.setState({inventarios})
 	      connection.end();
-	    })
+			})
+			*/
   	} else {
   		console.log('Vazio!')
   	}
