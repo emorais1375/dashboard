@@ -11,28 +11,15 @@ var nedb = require('nedb');
 var mysql = require('mysql');
 const env = require('./.env')
 
-function get_table_mysql(table_name) {
-  let connection = mysql.createConnection(env.config_mysql);
-  connection.query('SELECT * FROM ' + table_name +';', [],(error, results, fields) => {
-    if(error){
-        console.log(error.code,error.fatal)
-        return
-    }
-    connection.end();
-    console.log(results);
-    return results
-  });
-}
-
-
-var databases = [
+var db_nedb = [
   {name:'login', db : new nedb({filename: 'login.db', autoload: true})},
-  {name:'inventario', inventario_db : new nedb({filename: 'inventario.db', autoload: true})},
-  {name:'base', base_db : get_table_mysql('base')}, //new nedb({filename: 'base.db', autoload: true})},
-  {name:'coleta', coleta_db : get_table_mysql('coleta')}, //new nedb({filename: 'coleta.db', autoload: true})},
-  {name:'usuarioenderecamento', usuario_enderecamento_db : get_table_mysql('usuario_enderecamento')}, //new nedb({filename: 'usuario_enderecamento.db', autoload: true})},
-  {name:'enderecamento', enderecamento_db :  get_table_mysql('enderecamento')},//new nedb({filename: 'enderecamento.db', autoload: true})},
-  {name:'divergencia', divergencia_db : get_table_mysql('divergencia')},//new nedb({filename: 'divergencia.db', autoload: true})} 
+  {name:'inventario', db : new nedb({filename: 'inventario.db', autoload: true})},
+  {name:'agendamento', db : new nedb({filename: 'agendamento.db', autoload: true})},
+  {name:'base', db : new nedb({filename: 'base.db', autoload: true})},
+  {name:'coleta', db : new nedb({filename: 'coleta.db', autoload: true})},
+  {name:'usuario_enderecamento', db : new nedb({filename: 'usuario_enderecamento.db', autoload: true})},
+  {name:'enderecamento', db :  new nedb({filename: 'enderecamento.db', autoload: true})},
+  {name:'divergencia', db : new nedb({filename: 'divergencia.db', autoload: true})} 
 ]
 /*
 var PouchDB = require('pouchdb');
@@ -441,30 +428,27 @@ function startExpress () {
     res.json({message:'Servidor funcionando!'})
   })
 }
+
 function loadDB(){
-  databases.forEach(db => {
-    var data ='';
-    console.log('-----calling api '+db.name+'------');
-    var request = net.request('http://arko.devemandamento.com/arkowebyii/web/server/' + db.name)
-    request.on('response', (response) => {
-      response.on('data', (chunk) => {
-        data += chunk;
-      })
-      response.on('end', () => {
-          data = JSON.parse(data);
-          db.db.remove({}, {multi:true})
-          db.db.insert(data, function(err){
-            if(err)return console.log(err); //caso ocorrer algum erro        
-            console.log("dados carregados de " + db.name);
-          });
-      })
-      response.on('error', (error) => {
-        console.log(`ERROR: ${JSON.stringify(error)}`)
-      })
-    })
-    request.end()  
+  db_nedb.forEach(db => {
+    let connection = mysql.createConnection(env.config_mysql);
+    connection.query('SELECT * FROM ' + db.name +';', [],(error, rows, fields) => {
+    if(error){
+        console.log(error.code,error.fatal)
+        return
+    }
+    connection.end();
+    var results = []
+    for (var i = 0;i < rows.length; i++) {
+      results.push(JSON.parse(JSON.stringify(rows[i])));
+    }
+    db.db.remove({}, {multi:true})
+    db.db.insert(results, function(err){
+      if(err)return console.log(err); //caso ocorrer algum erro        
+      console.log("dados carregados de " + db.name);
+    }); 
   });
-}
+});}
 
 const { ipcMain } = require('electron')
 ipcMain.on('asynchronous-message', (event, arg) => {
@@ -477,4 +461,3 @@ ipcMain.on('set-inventario', (event, arg) => {
   console.log('Inventario: '+arg) // prints "ping"
   inventario_id = arg // 'start' 'pause' 'finalizado'
 })
-
