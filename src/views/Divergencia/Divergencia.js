@@ -147,10 +147,10 @@ class Divergencia extends Component {
   	const { divergencia, checkAll } = this.state
     return (
       <div className="content">
-        <Row>
-        <div class="p-2"></div>
-        <div class="p-2"><Download /></div>
-        <div class="p-2"> <ExcelFile filename="Relatorios" element={<Button variant="info" onClick={this.auditar}>Baixar Divergencia</Button>}>
+        <div>
+        <div className="d-inline p-2"><Download /></div>
+        <div className="d-inline p-2">
+          <ExcelFile filename="Relatorios" element={<Button variant="info" onClick={this.auditar}>Baixar Divergencia</Button>}>
           <ExcelSheet name="Divergencia" data={divergencia}>
             <ExcelColumn label="EAN" value="cod_barra"/>
             <ExcelColumn label="Saldo" value="saldo_estoque"/>
@@ -159,7 +159,7 @@ class Divergencia extends Component {
           </ExcelSheet>
         </ExcelFile>
         </div>
-        </Row>
+        </div>
         <h1>Divergencia</h1>
         <Container fluid>
           <Row>
