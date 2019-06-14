@@ -19,7 +19,8 @@ var db_nedb = [
   {name:'coleta', db : new nedb({filename: 'coleta.db', autoload: true})},
   {name:'usuario_enderecamento', db : new nedb({filename: 'usuario_enderecamento.db', autoload: true})},
   {name:'enderecamento', db :  new nedb({filename: 'enderecamento.db', autoload: true})},
-  {name:'divergencia', db : new nedb({filename: 'divergencia.db', autoload: true})} 
+  {name:'divergencia', db : new nedb({filename: 'divergencia.db', autoload: true})} ,
+  {name:'usuario', db : new nedb({filename: 'usuario.db', autoload: true})} 
 ]
 /*
 var PouchDB = require('pouchdb');
