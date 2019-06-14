@@ -9,12 +9,8 @@ import {
   Row,
   Col
 } from "react-bootstrap"
+// import NaoEncontrados from '../../components/NaoEncontrados'
 import Download from '../../components/Download'
-import ReactExport from "react-data-export"
-
-const ExcelFile = ReactExport.ExcelFile;
-const ExcelSheet = ReactExport.ExcelFile.ExcelSheet;
-const ExcelColumn = ReactExport.ExcelFile.ExcelColumn;
 
 class Divergencia extends Component {
 	constructor(props){
@@ -148,17 +144,9 @@ class Divergencia extends Component {
     return (
       <div className="content">
         <Row>
-        <div class="p-2"></div>
-        <div class="p-2"><Download /></div>
-        <div class="p-2"> <ExcelFile filename="Relatorios" element={<Button variant="info" onClick={this.auditar}>Baixar Divergencia</Button>}>
-          <ExcelSheet name="Divergencia" data={divergencia}>
-            <ExcelColumn label="EAN" value="cod_barra"/>
-            <ExcelColumn label="Saldo" value="saldo_estoque"/>
-            <ExcelColumn label="Quantidade" value="qtd_divergencia"/>
-            <ExcelColumn label="Valor" value="valor_divergente"/>
-          </ExcelSheet>
-        </ExcelFile>
-        </div>
+        <div className="p-2"></div>
+        {/* <div className="p-2"><NaoEncontrados /></div> */}
+        <div className="p-2"><Download /></div>
         </Row>
         <h1>Divergencia</h1>
         <Container fluid>
