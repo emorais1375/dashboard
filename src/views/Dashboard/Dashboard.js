@@ -4,6 +4,9 @@ import env from '../../../.env'
 import nedb from 'nedb'
 var base_db = new nedb({filename: 'base.db', autoload: true})
 var coleta_db = new nedb({filename: 'coleta.db', autoload: true})
+var usuario_enderecamento = new nedb({filename: 'usuario_enderecamento.db', autoload: true})
+var enderecamento = new nedb({filename: 'enderecamento.db', autoload: true})
+var usuario = new nedb({filename: 'usuario.db', autoload: true})
 import { 
   Container, 
   Row, 
@@ -116,8 +119,9 @@ componentWillUnmount() {
 }
 lerBase(){
   let {inventario_id} = this.state;
+  console.log(inventario_id)
   if (inventario_id) {
-    base_db.find({inventario_id: inventario_id}).sort({ saldo_estoque: 1 }).exec(function(err, base){
+    base_db.find({inventario_id: parseInt(inventario_id)}).sort({ saldo_estoque: 1 }).exec(function(err, base){
       this.setState({ base })
     }.bind(this));
     /*
@@ -144,7 +148,24 @@ lerBase(){
 lerColeta(){
   let {inventario_id, tipo_coleta} = this.state;
   if (inventario_id) {
-    
+    coleta_db.find({inventario_id: parseInt(inventario_id), tipo_coleta: tipo_coleta}, function(err, coletas){
+      var results = []
+      coletas.forEach(col => {
+        if(!results.find(function(elem, i, array){
+          if(elem.cod_barra == col.cod_barra){
+            elem.qtd += col.itens_embalagem
+            return true;
+          }
+          return false;
+        })){
+          results.push({'cod_barra' : col.cod_barra, 'qtd':col.itens_embalagem})
+        }
+      });
+      results.sort(function(a,b){
+        return b.qtd - a.qtd;
+      });
+      this.setState({coleta: results })
+    }.bind(this))
     /*
     let connection = mysql.createConnection(env.config_mysql);
     let query = `
@@ -171,6 +192,22 @@ lerColeta(){
 lerEnd() {
   let {inventario_id, tipo_coleta} = this.state;
   if (inventario_id) {
+    usuario_enderecamento.find({inventario_id:parseInt(inventario_id), tipo:tipo_coleta}, function(err, rows){
+      var results = [];
+      new Promise(function(resolve, reject){
+        rows.forEach(element => {
+          enderecamento.findOne({id: element.enderecamento_id}, function(err, end){
+            results.push({'id':element.id, 'descricao': end.descricao, 'status': element.status})
+            resolve(results);
+          })
+        });
+      }).then(()=> {
+        console.log(results);
+        this.setState({enderecamento:results})
+      });
+      
+    }.bind(this))
+    /*
     let connection = mysql.createConnection(env.config_mysql);
     let query = `
       select e.id, descricao, status
@@ -186,6 +223,7 @@ lerEnd() {
       this.setState({ enderecamento })
       connection.end();
     })
+    */
   } else {
     console.log('Vazio!')
   }  
@@ -193,6 +231,39 @@ lerEnd() {
 lerEquipe() {
   let {inventario_id} = this.state;
   if (inventario_id) {
+    usernames = {}
+    usuario.find({id:parseInt(element.usuario_id)}, function(err, user){
+      usernames[user.id] = user.nome;
+    });
+    usuario_enderecamento.find({inventario_id: parseInt(inventario_id)}, function(err, rows){
+      console.log(rows);
+      var users = []
+      rows.forEach(element => {
+        if(!users.find(function(user, i, array){
+          if(user.usuario_id == element.usuario_id){
+            if(element.tipo == 'INVENTARIO'){
+              user.qtd_enderecamento += 1;
+              if(element.status == 'CONCLUIDO'){
+                user.qtd_concluido += 1;
+              }
+              user.progress = (user.qtd_concluido / user.qtd_enderecamento)*100;
+            }
+            return true;
+          }else {
+            return false;
+          }
+        })){
+          new Promise(function(resolve, reject){
+            
+          }).then((result)=>{
+            users.push({'nome': result, 'usuario_id': element.usuario_id, 'qtd_enderecamento':1, 'qtd_concluido': 1, 'progress':0})
+      
+          })
+         }
+      });
+      console.log(users);
+    })
+    /*
     let connection = mysql.createConnection(env.config_mysql);
     let query = `
       select usuario_id, nome, COUNT(enderecamento_id) qtd_enderecamento,
@@ -215,6 +286,7 @@ lerEquipe() {
       this.setState({ equipe, progressTotal })
       connection.end();
     })
+    */
   } else {
     console.log('Vazio!')
   }  

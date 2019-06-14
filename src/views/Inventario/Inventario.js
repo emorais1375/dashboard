@@ -32,36 +32,33 @@ class Inventario extends Component {
 
   componentDidMount() {
 		const {usuario_coordenador_id} = this.state
-		var lerDoBanco = new Promise(function(resolve, reject){
-			if (usuario_coordenador_id) {
+		if (usuario_coordenador_id) {
 				var results = [];
-				inventario_db.find({usuario_coordenador_id:parseInt(usuario_coordenador_id)},function(err, lista_inventario){	
-						lista_inventario.forEach(inv => {
-						var res = {id:inv.id, data:'',hora:'',status:'',tipo_inventario:inv.tipo_inventario,inventario_status:inv.inventario_status}
-						agendamento_db.findOne({id:parseInt(inv.agendamento_id)}, function(err, agend){
-							if(agend){
-								Object.assign(res, {data: agend.data_agendamento});
-								Object.assign(res, {hora: agend.hora_agendamento});
-								Object.assign(res, {status: agend.agendamento_status});
-							}
-						}.bind(res))
-						results.push(res);
+				new Promise(function( resolve, reject ){
+					inventario_db.find({usuario_coordenador_id:parseInt(usuario_coordenador_id)},function(err, lista_inventario){	
+						if(lista_inventario){
+							resolve(lista_inventario);
+						}
+						else reject('inventario nao encontrado');
+				})
+				}).then(lista_inventario => {
+					lista_inventario.forEach(invent => {
+					new Promise(function( resolve, reject ){
+							agendamento_db.findOne({id: parseInt(invent.agendamento_id)}, function(err, agend){
+								if(agend){
+									invent.data = agend.data_agendamento;
+									invent.hora = agend.hora_agendamento;
+									invent.status = agend.agendamento_status;
+									resolve(lista_inventario)
+								} else reject('agendamento nao encontrado ')
+							}.bind(invent))
+					}).then(() => {
+						this.setState({inventarios:lista_inventario})
+					})					
 					});
-				}.bind(results))
-					console.log(results)
-					resolve(results);
-				} else {
-					console.log('Vazio!')
-					reject(Error("It broke"));
-				}
-		});
-		lerDoBanco.then(function(result) {
-			this.setState({inventarios:result})
-			console.log(this.state.inventarios); // "Stuff worked!"
-		}.bind(this), function(err) {
-			console.log(err); // Error: "It broke"
-		});
-
+				})
+				
+			}
 			/*
       let connection = mysql.createConnection(env.config_mysql);
   		let query = `
@@ -120,7 +117,6 @@ class Inventario extends Component {
               </thead>
               <tbody>
               	{inventarios.map(prop=>{
-									console.log(prop)
               		return <tr key={prop.id}>
               			<td>{prop.id}</td>
 										<td>{prop.tipo_inventario}</td>
