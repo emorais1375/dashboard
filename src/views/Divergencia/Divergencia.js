@@ -9,7 +9,7 @@ import {
   Row,
   Col
 } from "react-bootstrap"
-// import NaoEncontrados from '../../components/NaoEncontrados'
+import NaoContrados from '../../components/NaoContados'
 import Download from '../../components/Download'
 
 class Divergencia extends Component {
@@ -145,7 +145,7 @@ class Divergencia extends Component {
       <div className="content">
         <Row>
         <div className="p-2"></div>
-        {/* <div className="p-2"><NaoEncontrados /></div> */}
+        <div className="p-2"><NaoContrados /></div>
         <div className="p-2"><Download /></div>
         </Row>
         <h1>Divergencia</h1>
