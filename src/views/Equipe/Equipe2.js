@@ -404,9 +404,9 @@ class Equipe2 extends Component {
                         <td>{prop[prop.length-1].descricao}</td>
                         <td>
                           <OverlayTrigger overlay={remove}>
-                            <Button variant="danger" onClick={() => this.alerta(prop, key)}>
-                              <i className="fa fa-times" />
-                            </Button>
+                            <button onClick={() => this.alerta(prop, key)} className = "text-light bg-danger rounded">
+                              x
+                            </button>
                           </OverlayTrigger>
                         </td>
                       </tr>;

@@ -340,16 +340,18 @@ render() {
       <h1>Dashboard</h1>
       <Container fluid>
         <Row>
-          <Col md={5}>
+          <Col md={6}>
             <Card 
               title="ENDERECAMENTO"
               content={ <div style={{
                 overflow: 'auto',
                 height: '250px'
             }}>
+              
                 <ButtonGroup vertical size="sm">
-                  {enderecamento.map(prop => {
+                <Row className="justify-content-xs-center">{enderecamento.map(prop => {
                     return (
+                      <Col className="mb-2" xs={6} sm={4} md={4} lg = {4} xl = {3}>
                       <Button variant={(() => {
                         switch(prop.status) {
                           case 'ATIVADO':
@@ -373,9 +375,11 @@ render() {
                         {prop.descricao}
                         {/*</Button>*/}
                       </Button>
+                      </Col>
                     );
-                  })}
-                </ButtonGroup></div>
+                  })}</Row>
+                </ButtonGroup>
+                </div>
               }
             />
           </Col>
@@ -408,11 +412,11 @@ render() {
             <Card
               content={
                 <div>
-                <div class="row p-1"><h6>{timeFormat}</h6></div>
-                <div class="row">  
-                  <div class="p-1"><Button size="sm" variant="info" disabled={isPaused?false:true} onClick={this.playClock}>Play</Button></div>
-                  <div class="p-1"><Button size="sm" variant="info" disabled={isPaused?true:false} onClick={this.pauseClock}>Pause</Button></div>
-                  <div class="p-1"><Button size="sm" variant="info" onClick={this.stopClock}>Stop</Button></div>
+                <div className="row d-flex justify-content-around mb-3"><h6>{timeFormat}</h6></div>
+                <div className="row d-flex justify-content-around">  
+                  <div><Button size="sm" variant="info" disabled={isPaused?false:true} onClick={this.playClock}>Play</Button></div>
+                  <div><Button size="sm" variant="info" disabled={isPaused?true:false} onClick={this.pauseClock}>Pause</Button></div>
+                  <div><Button size="sm" variant="info" onClick={this.stopClock}>Stop</Button></div>
                 </div>
                 </div>
               }

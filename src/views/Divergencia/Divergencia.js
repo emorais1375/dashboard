@@ -9,8 +9,8 @@ import {
   Row,
   Col
 } from "react-bootstrap"
-import NaoContrados from '../../components/NaoContados'
 import Download from '../../components/Download'
+import NaoContados from "../../components/NaoContados";
 
 class Divergencia extends Component {
 	constructor(props){
@@ -143,11 +143,12 @@ class Divergencia extends Component {
   	const { divergencia, checkAll } = this.state
     return (
       <div className="content">
-        <Row>
-        <div className="p-2"></div>
-        <div className="p-2"><NaoContrados /></div>
-        <div className="p-2"><Download /></div>
-        </Row>
+        
+        <div>
+          <div className="d-inline p-2"><NaoContados /></div>
+          <div className="d-inline p-2"><Download /></div>
+        </div>
+
         <h1>Divergencia</h1>
         <Container fluid>
           <Row>
