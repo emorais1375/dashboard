@@ -84,7 +84,7 @@ class Login extends Component {
             <LoginNavbar />
             <br/>
             <br/>
-            <div class="d-flex justify-content-center">
+            <div className="d-flex justify-content-center">
                 <Card bg="light" style={{ width: '18rem' }}>
                     <Card.Header>Login</Card.Header>
                     <Card.Body className="p-3">

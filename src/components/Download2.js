@@ -19,6 +19,9 @@ export default class Download2 extends React.Component {
         this.state = {
           inventario_id: localStorage.getItem('inv_id') || '',
           inventario_status: localStorage.getItem('inv_status') || '',
+          rl_1: JSON.parse(localStorage.getItem('rl_1')) || [],
+          rl_2: JSON.parse(localStorage.getItem('rl_2')) || [],
+          rl_3: JSON.parse(localStorage.getItem('rl_3')) || [],
           confronto: [],
           rlDivergencia: [],
           itensNaoContados: [],
@@ -297,10 +300,10 @@ export default class Download2 extends React.Component {
         })
     }
     render() {
-        const { confronto, rlDivergencia, itensNaoContados, contagem } = this.state
+        const { confronto, rlDivergencia, itensNaoContados, contagem, rl_1, rl_2, rl_3 } = this.state
         return (
             <ExcelFile element={<Button variant="info" onClick={this.auditar}>Download Data</Button>}>
-                <ExcelSheet data={confronto} name="Confronto">
+                {/* <ExcelSheet data={confronto} name="Confronto">
                     <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
                     <ExcelColumn label="SETOR" value="setor_secao"/>
                     <ExcelColumn label="GRUPO" value="grupo"/>
@@ -321,8 +324,8 @@ export default class Download2 extends React.Component {
                     <ExcelColumn label="VENDA INVENT" value="venda_inventario"/>
                     <ExcelColumn label="CUSTO DIVERG" value="custo_divergencia"/>
                     <ExcelColumn label="VENDA DIVERG" value="venda_divergencia"/>
-                </ExcelSheet>
-                <ExcelSheet data={rlDivergencia} name="Relatório Diverg">
+                </ExcelSheet> */}
+                <ExcelSheet data={rl_1} name="Relatório Diverg 1">
                     <ExcelColumn label="ENDEREÇO" value="enderecamento"/>
                     <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
                     <ExcelColumn label="SETOR" value="setor_secao"/>
@@ -334,9 +337,37 @@ export default class Download2 extends React.Component {
                     <ExcelColumn label="CÓDIGO INTERNO" value="cod_interno"/>
                     <ExcelColumn label="DESCRIÇÃO" value="descricao_item"/>
                     <ExcelColumn label="QUANT INVENT" value="qtd_inventario"/>
-                    <ExcelColumn label="DIVERG" value="qtd_divergente"/>
+                    <ExcelColumn label="DIVERG" value="qtd_divergencia"/>
                 </ExcelSheet>
-                <ExcelSheet data={itensNaoContados} name="Relatório itens não contados">
+                <ExcelSheet data={rl_2} name="Relatório Diverg 2">
+                    <ExcelColumn label="ENDEREÇO" value="enderecamento"/>
+                    <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
+                    <ExcelColumn label="SETOR" value="setor_secao"/>
+                    <ExcelColumn label="GRUPO" value="grupo"/>
+                    <ExcelColumn label="FAMÍLIA" value="familia"/>
+                    <ExcelColumn label="SUBFAMILIA" value="subfamilia"/>
+                    <ExcelColumn label="EAN" value="cod_barra"/>
+                    <ExcelColumn label="REFERÊNCIA" value="referencia"/>
+                    <ExcelColumn label="CÓDIGO INTERNO" value="cod_interno"/>
+                    <ExcelColumn label="DESCRIÇÃO" value="descricao_item"/>
+                    <ExcelColumn label="QUANT INVENT" value="qtd_inventario"/>
+                    <ExcelColumn label="DIVERG" value="qtd_divergencia"/>
+                </ExcelSheet>
+                <ExcelSheet data={rl_3} name="Relatório Diverg 3">
+                    <ExcelColumn label="ENDEREÇO" value="enderecamento"/>
+                    <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
+                    <ExcelColumn label="SETOR" value="setor_secao"/>
+                    <ExcelColumn label="GRUPO" value="grupo"/>
+                    <ExcelColumn label="FAMÍLIA" value="familia"/>
+                    <ExcelColumn label="SUBFAMILIA" value="subfamilia"/>
+                    <ExcelColumn label="EAN" value="cod_barra"/>
+                    <ExcelColumn label="REFERÊNCIA" value="referencia"/>
+                    <ExcelColumn label="CÓDIGO INTERNO" value="cod_interno"/>
+                    <ExcelColumn label="DESCRIÇÃO" value="descricao_item"/>
+                    <ExcelColumn label="QUANT INVENT" value="qtd_inventario"/>
+                    <ExcelColumn label="DIVERG" value="qtd_divergencia"/>
+                </ExcelSheet>
+                {/* <ExcelSheet data={itensNaoContados} name="Relatório itens não contados">
                     <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
                     <ExcelColumn label="SETOR" value="setor_secao"/>
                     <ExcelColumn label="COD" value="cod_interno"/>
@@ -360,7 +391,7 @@ export default class Download2 extends React.Component {
                     <ExcelColumn label="INVENTARIO" value="c1"/>
                     <ExcelColumn label="AUDITORIA INTERNA" value="c2"/>
                     <ExcelColumn label="AUDITORIA EXTERNA" value="c3"/>
-                </ExcelSheet>
+                </ExcelSheet> */}
             </ExcelFile>
         );
     }

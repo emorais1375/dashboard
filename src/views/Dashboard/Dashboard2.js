@@ -25,6 +25,10 @@ class Dashboard2 extends Component {
       tipo_coleta: 'AUDITORIA2',
       inventario: [],
       base: JSON.parse(localStorage.getItem('div2')) || [],
+      div1: JSON.parse(localStorage.getItem('div1')) || [],
+      rl_1: JSON.parse(localStorage.getItem('rl_1')) || [],
+      rl_2: JSON.parse(localStorage.getItem('rl_2')) || [],
+      rl_3: JSON.parse(localStorage.getItem('rl_3')) || [],
       coleta: [],
       enderecamento: [],
       enderecamentoCod: [],
@@ -35,7 +39,8 @@ class Dashboard2 extends Component {
       timeFormat: '00:00:00',
       items: [], text: '',
       showModalCod: false,
-      progressTotal: 0
+      progressTotal: 0,
+      showButton: false
     };
 
     this.playClock = this.playClock.bind(this);
@@ -83,6 +88,7 @@ class Dashboard2 extends Component {
 
   }
   stopClock(){
+    this.createDivergencia()
     alert('Finalizar inventario.');
     this.pauseClock();
     this.setState({
@@ -101,7 +107,10 @@ class Dashboard2 extends Component {
     }
     return time
   }
-  componentDidMount() {
+  componentDidMount() { 
+    console.table(this.state.rl_1)
+    console.table(this.state.rl_2)
+    console.table(this.state.base)
     this.startClock();
     // this.lerBase();
     this.lerColeta();
@@ -139,7 +148,8 @@ class Dashboard2 extends Component {
     if (inventario_id) {
       let connection = mysql.createConnection(env.config_mysql);
       let query = `
-        SELECT cod_barra, SUM(itens_embalagem) AS 'qtd' 
+        SELECT cod_barra, SUM(itens_embalagem) AS 'qtd' ,
+        GROUP_CONCAT(DISTINCT enderecamento) enderecamento
         FROM coleta 
         WHERE inventario_id = ? 
         AND tipo_coleta=?
@@ -208,6 +218,40 @@ class Dashboard2 extends Component {
     } else {
       console.log('Vazio!')
     }  
+  }
+  createDivergencia(){
+    const { base, coleta, rl_1, rl_2 } = this.state
+    let divergencia2 = []
+    base.map(b =>{
+      let div = {
+        base_id: b['base_id'],
+        cod_barra: b['cod_barra'],
+        saldo_estoque: b['qtd'],
+        qtd_inventario: 0,
+        qtd_divergencia: 0 - b['qtd'],
+        // valor_divergente: Number(((0 - b['qtd'])*b['valor_custo']).toFixed(2))
+      }
+      let element = coleta.find(c => {
+        return b['cod_barra'] === c['cod_barra']
+      })
+      if (element) {
+        div['enderecamento'] = element['enderecamento'],
+        div['qtd_inventario'] = element['qtd'],
+        div['qtd_divergencia'] = element['qtd'] - b['qtd']
+        // div['valor_divergente'] = Number(((element['qtd_inventario'] - b['saldo_estoque'])*b['valor_custo']).toFixed(2))
+        if(div['qtd_divergencia'] !== 0) divergencia2.push(div)
+      } else {
+        if(div['qtd_divergencia'] !== 0) divergencia2.push(div)
+      }
+    })
+    console.table(rl_1)
+    console.table(rl_2)
+    console.table(divergencia2)
+    localStorage.setItem('rl_3', JSON.stringify(divergencia2))
+    this.setState({rl_3: divergencia2})
+    setInterval(()=>{
+      this.setState({showButton: true})
+    },2000)
   }
   inserirDivergencia() {
     let {inventario_id, tipo_coleta} = this.state;
@@ -332,10 +376,12 @@ class Dashboard2 extends Component {
     }
   }
   render() {
-    const { base, coleta, timeFormat, isPaused, enderecamento, equipe, enderecamentoCod, progressTotal } = this.state
+    const { showButton, base, coleta, timeFormat, isPaused, enderecamento, equipe, enderecamentoCod, progressTotal } = this.state
     return (
       <div className="content">
-        <Download2 />
+        {showButton && 
+          <Download2 />
+        }
         <h1>Dashboard</h1>
         <Container fluid>
           <Row>

@@ -12,6 +12,7 @@ import Login from "./views/Login/Login";
 import Inventario from "./views/Inventario/Inventario";
 import Divergencia from "./views/Divergencia/Divergencia";
 import Divergencia1 from "./views/Divergencia/Divergencia1";
+import Codigo from "./views/Codigo";
 
 const dashboardRoutes = [
   {
@@ -58,6 +59,11 @@ const dashboardRoutes = [
     path: "/divergencia",
     name: "Divergencia",
     component: Divergencia,
+    layout: "/admin"
+  }, {
+    path: "/codigo",
+    name: "Codigo",
+    component: Codigo,
     layout: "/admin"
   },
   // Audit1

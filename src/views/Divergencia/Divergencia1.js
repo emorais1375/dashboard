@@ -119,6 +119,7 @@ class Divergencia1 extends Component {
           query = query + "UPDATE divergencia SET auditar = ?, auditar_externo = ? WHERE base_id = ?;"
         }
       })
+      console.table(div)
       resolve()
     })
     .then(() => {
@@ -135,12 +136,12 @@ class Divergencia1 extends Component {
     })
     .then(() => {
       if (div.length) {
-        alert(texto)
+        // alert(texto)
+        localStorage.setItem('rl_2', JSON.stringify(this.state.divergencia))
         localStorage.setItem('div2', JSON.stringify(div))
         this.props.history.push('/audit2/dashboard')
       } else {
         alert('Não foram selecionados itens para serem auditados.')
-        console.log('Vazio!')
       }
     })
   }

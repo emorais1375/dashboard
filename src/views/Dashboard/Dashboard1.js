@@ -470,7 +470,7 @@ class Dashboard1 extends Component {
                       return (
                         <tr key={key}>
                           <td>{prop.cod_barra}</td>
-                          <td>{prop.qtd}</td>
+                          <td>{prop.saldo_estoque}</td>
                         </tr>
                       );
                     })}

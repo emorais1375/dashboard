@@ -56,13 +56,11 @@ class Equipe extends Component {
           const descricao = results[0].desc.split('-')[0];
           const inicial_end = results[0].desc.split('-')[1];
           const final_end = results[1].desc.split('-')[1];
-          console.log(descricao);
           this.setState({descricao, inicial_end, final_end});
         }else if (results.length) {
           const descricao = results[0].desc.split('-')[0];
           const inicial_end = results[0].desc.split('-')[1];
           const final_end = results[0].desc.split('-')[1];
-          console.log(descricao);
           this.setState({descricao, inicial_end, final_end});
         }
         connection.end();
@@ -103,8 +101,6 @@ class Equipe extends Component {
 
         if (results.length) {
           results.map(end_atual=>{
-
-            console.log('entro')
             if (ends.length) {
               end_ant = ends[ends.length-1]; // ultimo enderecamento
               if (end_atual.usuario_id === end_ant.usuario_id) {
@@ -128,15 +124,6 @@ class Equipe extends Component {
         this.setState({
           tdArray2: ends_user
         });
-        if (ends_user.length) {
-          ends_user.map(end => {
-            if (end.length) {
-              console.log(end[0].nome)
-              console.log(end[0].descricao)
-              console.log(end[end.length-1].descricao)
-            }
-          });
-        }
         connection.end();
       });
     });
@@ -146,7 +133,6 @@ class Equipe extends Component {
     prop.map(p=>{
       enderecamentos.push([p.id]);
     });
-    console.log(enderecamentos)
     if (enderecamentos) {
       let connection = mysql.createConnection(env.config_mysql);
       let sql = "\
@@ -170,7 +156,6 @@ class Equipe extends Component {
     });
   }
   handleSubmit(ev) {
-    console.log('handleSubmit()')
     ev.preventDefault();
     let inicial = this.state.inicial;
     let final = this.state.final;
@@ -179,66 +164,57 @@ class Equipe extends Component {
     let enderecamentos = [];
 
     if (inicial && final && nome) {
-      const usuario_id = this.state.nomes[nome-1].id;
-      inicial = this.state.descricao + '-' +inicial;
-      final = this.state.descricao + '-' +final;
-      console.log(
-        usuario_id,
-        inicial,
-        final
-      );
-      let connection = mysql.createConnection(env.config_mysql);
-      let sql = "\
-      SELECT id, descricao  FROM enderecamento\
-      WHERE inventario_id=? AND id >= (\
-      SELECT id FROM enderecamento\
-      WHERE inventario_id=? AND descricao=?)\
-      AND id <= ( SELECT id FROM enderecamento\
-      WHERE inventario_id=?  AND descricao=?)";
-      connection.query(sql, [inventario_id, inventario_id, inicial, inventario_id, final], (error, results, fields)=>{
-        if(error) {
-          console.log(error.code, error.fatal);
-          return;
-        }
-        console.log('id', results);
-        results.map(result => {
-          enderecamentos.push([
-            inventario_id,
-            usuario_id,
-            result.id,
-            'INVENTARIO'
-          ]);
-          console.log('end:'+result.id)
-          console.log('use:'+usuario_id)
-          console.log('inv:'+inventario_id)
-        })
-        if (enderecamentos.length) {
-          sql = "\
-          INSERT INTO usuario_enderecamento (inventario_id, usuario_id, enderecamento_id, tipo)\
-          VALUES ?";
-          connection.query(sql, [enderecamentos], (error, results, fields)=>{
-            if(error) {
-              console.log('Puts:',error.code, error.fatal);
-              return;
-            }
-            this.atualizaLista();
-            this.handleCancel();
+        const usuario_id = this.state.nomes[nome-1].id;
+        inicial = this.state.descricao + '-' +inicial;
+        final = this.state.descricao + '-' +final;
+        let connection = mysql.createConnection(env.config_mysql);
+        let sql = "\
+        SELECT id, descricao  FROM enderecamento\
+        WHERE inventario_id=? AND id >= (\
+        SELECT id FROM enderecamento\
+        WHERE inventario_id=? AND descricao=?)\
+        AND id <= ( SELECT id FROM enderecamento\
+        WHERE inventario_id=?  AND descricao=?)";
+        connection.query(sql, [inventario_id, inventario_id, inicial, inventario_id, final], (error, results, fields)=>{
+          if(error) {
+            console.log(error.code, error.fatal);
+            return;
+          }
+          results.map(result => {
+            enderecamentos.push([
+              inventario_id,
+              usuario_id,
+              result.id,
+              'INVENTARIO'
+            ]);
+          })
+          if (enderecamentos.length) {
+            sql = "\
+            INSERT INTO usuario_enderecamento (inventario_id, usuario_id, enderecamento_id, tipo)\
+            VALUES ?";
+            connection.query(sql, [enderecamentos], (error, results, fields)=>{
+              if(error) {
+                console.log(error.code, error.fatal);
+                return;
+              }
+              this.atualizaLista();
+              this.handleCancel();
+              connection.end();
+            });  
+          }
+          else{
             connection.end();
-          });  
-        }
-        else{
-          connection.end();
-        }
-      });
+          }
+        });
+    } else {
+      alert('Preencha todos os campos!')
     }
   }
   handleCancel() {
-    console.log('handleCancel()')
     if (this.state.inicial || this.state.final || this.state.nome) {
       this.setState({
         nome: 0, inicial: '', final: ''
       });
-      console.log('limpar!')
     }
   }
   render() {
@@ -283,8 +259,8 @@ class Equipe extends Component {
                   </Form.Group>
                 </Form.Row>
                 <ButtonToolbar>
-                <div class="p-2"><Button as="input" variant="info" type="submit" value="Salvar"/></div>
-                <div class="p-2"><Button as="input" variant="secondary" type="button" value="Cancelar" onClick={this.handleCancel}/></div>
+                <div className="p-2"><Button as="input" variant="info" type="submit" value="Salvar"/></div>
+                <div className="p-2"><Button as="input" variant="secondary" type="button" value="Cancelar" onClick={this.handleCancel}/></div>
                 </ButtonToolbar>
               </Form>
             </Col>

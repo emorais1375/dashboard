@@ -142,7 +142,7 @@ class Enderecamento extends Component {
         const inventario_id = this.state.inventario_id
         if (final > inicial) {
             for (let i = inicial+1; i <= final; i++) {
-                descricao = prefixo + '-' + i
+                descricao = `${prefixo}-${(i).toString().length === 1?'0' + i:i}`
                 enderecamentos.push([
                     inventario_id,
                     descricao,
@@ -160,18 +160,24 @@ class Enderecamento extends Component {
 
             connection.query(query, [enderecamentos], (error, results, fields)=>{
                 if(error) {
-                  console.log('Puts:',error.code, error.fatal);
+                  console.log(error.code, error.fatal);
                   return;
                 }
-                console.log(results.affectedRows+' enderecamento(s) inserido(s)!')
+                alert(results.affectedRows+' enderecamento(s) inserido(s)!')
                 this.atualizaLista();
                 this.handleCancel();
                 connection.end();
             })
         } else {
-            console.log('Entrada invalida!')
+            alert('Entrada invalida!')
         }
     }
+    // handleChangeCheckAll(ev){
+    //     const check = ev.target.checked?true:false
+    //     this.setState({checkAll:check})
+    //     const divergencia = this.state.divergencia.slice()
+    //     this.setState({divergencia:this.getChangedDivergencia(divergencia, check)})
+    // }
     handleCancel() {
         if (this.state.final) {
             this.setState({final: ''})
@@ -181,11 +187,6 @@ class Enderecamento extends Component {
     const tipo_inventario = this.state.tipo_inventario;
     let thArray;
     let tbody;
-    if (tipo_inventario !== 'VARREDURA') {
-        thArray = ["#", "Endereço", "Excecao"];
-    } else {
-        thArray = ["#", "Endereço"];
-    }
     return (
       <div>
         <h1>Enderecamento</h1>
@@ -211,8 +212,8 @@ class Enderecamento extends Component {
                     </Form.Row>
                     <ButtonToolbar>
                         
-                    <div class="p-2"><Button as="input" variant="info" type="submit" value=" Salvar "/></div>
-                    <div class="p-2"><Button as="input" variant="secondary" type="button" value=" Cancelar " onClick={this.handleCancel}/></div>
+                    <div className="p-2"><Button as="input" variant="info" type="submit" value=" Salvar "/></div>
+                    <div className="p-2"><Button as="input" variant="secondary" type="button" value=" Cancelar " onClick={this.handleCancel}/></div>
 
                     </ButtonToolbar>
                 </Form>
@@ -224,9 +225,15 @@ class Enderecamento extends Component {
                 <Table  striped>
                     <thead>
                         <tr>
-                            {thArray.map((prop, key) => {
-                                return <th key={key}>{prop}</th>;
-                            })}
+                            <th>Id</th>
+                            <th>Endereço</th>
+                            <th>Excecao
+                                {/* <Form.Check
+                                    label="Excecao"
+                                    onChange={e => this.handleChangeCheckAll(e)}
+                                    checked = {checkAll}
+                                /> */}
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -235,13 +242,11 @@ class Enderecamento extends Component {
                                 <tr key={prop.id}>
                                     <td>{prop.id}</td>
                                     <td>{prop.descricao}</td>
-                                    {tipo_inventario !== 'VARREDURA' &&
-                                        <td >
-                                            <Form.Check 
-                                                checked={prop.excecao === 'SIM'? true:false}
-                                                onChange={e => this.handleChange(e, key)}/>
-                                        </td>
-                                    }
+                                    <td >
+                                        <Form.Check 
+                                            checked={prop.excecao === 'SIM'? true:false}
+                                            onChange={e => this.handleChange(e, key)}/>
+                                    </td>
                                 </tr>
                             );
                         })}                       

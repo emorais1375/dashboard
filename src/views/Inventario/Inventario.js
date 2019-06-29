@@ -79,6 +79,8 @@ class Inventario extends Component {
         		<Table striped size="sm" responsive>
               <thead>
               	<tr>
+              		<th>ID</th>
+									<th>Tipo</th>
               		<th>Data e Hora</th>
               		<th>Status</th>
               		<th>Ação</th>
@@ -87,6 +89,8 @@ class Inventario extends Component {
               <tbody>
               	{inventarios.map(prop=>{
               		return <tr key={prop.id}>
+              			<td>{prop.id}</td>
+										<td>{prop.tipo_inventario}</td>
               			<td>{prop.data} - {prop.hora}</td>
               			<td>{prop.status}</td>
               			<td>

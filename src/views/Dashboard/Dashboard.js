@@ -73,7 +73,6 @@ startClock(){
       }
     }, 1000
   ); 
-  console.log('[interval] iniciado')
 }
 playClock(){
   const {tipo_coleta} = this.state
@@ -111,14 +110,13 @@ componentDidMount() {
 }
 componentWillUnmount() {
   clearInterval(this.interval);
-  console.log('[interval] finalizado')
 }
 lerBase(){
   let {inventario_id} = this.state;
   if (inventario_id) {
     let connection = mysql.createConnection(env.config_mysql);
     let query = `
-      SELECT cod_barra, saldo_estoque AS 'qtd' 
+      SELECT id, cod_barra, saldo_estoque AS 'qtd' 
       FROM base 
       WHERE inventario_id=?
       ORDER BY qtd DESC
@@ -291,7 +289,8 @@ inserirDivergencia() {
           if (!results.length) {
             alert('Não há divergencias para serem auditadas!')
           } else {
-            this.props.history.push('/admin/divergencia')
+            // this.props.history.push('/admin/divergencia')
+            this.props.history.push('/admin/codigo')
           }
           connection.end();
         })
@@ -351,31 +350,33 @@ render() {
                 <ButtonGroup vertical size="sm">
                 <Row className="justify-content-xs-center">{enderecamento.map(prop => {
                     return (
-                      <Col className="mb-2" xs={6} sm={4} md={4} lg = {4} xl = {3}>
-                      <Button variant={(() => {
-                        switch(prop.status) {
-                          case 'ATIVADO':
-                            return 'secondary';
-                          case 'CONCLUIDO':
-                            return 'success';
-                          case 'INICIADO':
-                            return 'warning';
-                          default:
-                            return 'secondary';
-                        }
-                      })()}
-                        onClick={e => this.handleShow(e, prop.descricao)}
-                        lg={3}
-                        md={3}
-                        sm={3} 
-                        xs={3} 
-                        key={prop.id}
-                      >
-                        {/*<Button size="sm">*/}
-                        {prop.descricao}
-                        {/*</Button>*/}
-                      </Button>
-                      </Col>
+                      <div key={prop.id}>
+                        <Col className="mb-2" xs={6} sm={4} md={4} lg = {4} xl = {3}>
+                          <Button variant={(() => {
+                            switch(prop.status) {
+                              case 'ATIVADO':
+                                return 'secondary';
+                              case 'CONCLUIDO':
+                                return 'success';
+                              case 'INICIADO':
+                                return 'warning';
+                              default:
+                                return 'secondary';
+                            }
+                          })()}
+                            onClick={e => this.handleShow(e, prop.descricao)}
+                            lg={3}
+                            md={3}
+                            sm={3} 
+                            xs={3} 
+                            key={prop.id}
+                          >
+                            {/*<Button size="sm">*/}
+                            {prop.descricao}
+                            {/*</Button>*/}
+                          </Button>
+                        </Col>
+                      </div>
                     );
                   })}</Row>
                 </ButtonGroup>
@@ -443,7 +444,7 @@ render() {
                   <tbody>
                     {coleta.map((prop, key) => {
                       return (
-                        <tr key={key}>
+                        <tr key={prop.cod_barra}>
                           <td>{prop.cod_barra}</td>
                           <td>{prop.qtd}</td>
                         </tr>
@@ -473,7 +474,7 @@ render() {
                   <tbody>
                     {base.map((prop, key) => {
                       return (
-                        <tr key={key}>
+                        <tr key={prop.id}>
                           <td>{prop.cod_barra}</td>
                           <td>{prop.qtd}</td>
                         </tr>
@@ -504,7 +505,7 @@ render() {
             <tbody>
               {enderecamentoCod.map((prop, key) => {
                 return (
-                  <tr key={key}>
+                  <tr key={prop.cod_barra}>
                     <td>{prop.cod_barra}</td>
                     <td>{prop.qtd}</td>
                   </tr>
