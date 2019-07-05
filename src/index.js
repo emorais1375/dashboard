@@ -15,6 +15,11 @@ import "./assets/css/animate.min.css";
 import "./assets/sass/light-bootstrap-dashboard.css?v=1.2.0";
 import "./assets/css/demo.css";
 
+let root = document.createElement('div')
+
+root.id = 'root'
+document.body.appendChild(root)
+
 const App = () => (
 	<HashRouter>
 	  <Switch>
@@ -28,7 +33,4 @@ const App = () => (
 	</HashRouter>
 )
 
-render(
-  <App />,
-  document.getElementById('app')
-);
+render(<App />, document.getElementById('root'))
