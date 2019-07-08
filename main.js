@@ -19,37 +19,9 @@ var db_nedb = [
   {name:'coleta', db : new nedb({filename: 'coleta.db', autoload: true})},
   {name:'usuario_enderecamento', db : new nedb({filename: 'usuario_enderecamento.db', autoload: true})},
   {name:'enderecamento', db :  new nedb({filename: 'enderecamento.db', autoload: true})},
-  {name:'divergencia', db : new nedb({filename: 'divergencia.db', autoload: true})} ,
+  {name:'divergencia', db : new nedb({filename: 'divergencia.db', autoload: true})},
   {name:'usuario', db : new nedb({filename: 'usuario.db', autoload: true})} 
 ]
-/*
-var PouchDB = require('pouchdb');
-var db = new PouchDB('importacaoTeste');
-var remoteCouch = false;
-let url_server_pouch = 'https://arkodb-server.herokuapp.com/arko_teste_server';
-
-//replica o banco do servidor, para o banco local
-db.replicate.from(url_server_pouch).on('complete', function(info) {
-        console.log("trouxe os dados");
-        console.log(info);
-    });
-
-// ids_inventarios é um array
-function pegaRegistrosInventarios(ids_inventarios){
-    db.find({
-        selector: {
-            // os valores no array, representam os valores do inventario
-          inventario: {$in:ids_inventarios}
-          }
-      }).then(function (result) {
-        console.log(result.docs);
-      }).catch(function (err) {
-        // ouch, an error
-        console.log(err);
-      });
-}
-*/
-
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -132,66 +104,42 @@ function startExpress () {
   const mysql = require('mysql')
   const env = require('./.env')
 
-  //const inventario_id = 1
-  //const tipo_coleta = 'INVENTARIO'
-  // let cargo = tipo_coleta==='AUDITORIA2'?'EXTERNO':'INVENTARIANTE' // 'EXTERNO'
-
   server.get('/login', (req, res) => {
-
-      let cargo = tipo_coleta==='AUDITORIA2'?'EXTERNO':'INVENTARIANTE' // 'EXTERNO'
-      let cpf = req.query.cpf || ''
-      const pass = req.query.password || ''
-      console.log('GET /login?cpf='+cpf+'&password='+pass)
+    let cpf = req.query.cpf || ''
+    const password = req.query.password || ''
+    console.log('GET /login?cpf='+cpf+'&password='+password)
     if (controle === 'play') {
-      if (cpf.length === 11 && pass) {
+      if (cpf.length === 11 && password) {
         cpf = cpf.split('')
         cpf.splice( 3, 0, '.')
         cpf.splice( 7, 0, '.')
         cpf.splice(11, 0, '-')
         cpf = cpf.join('')
-        let connection = mysql.createConnection(env.config_mysql)
-        let query = `
-          SELECT DISTINCT 
-            l.usuario_id, l.username, ue.tipo tipo_coleta
-          FROM 
-            login l, usuario u, usuario_enderecamento ue
-          WHERE 
-            l.login_status = 'ATIVO'
-          AND 
-            l.usuario_id = u.id
-          AND 
-            u.cargo = ?
-          AND 
-            l.usuario_id = ue.usuario_id
-          AND 
-            ue.inventario_id = ?
-          AND
-            ue.tipo = ?
-          AND 
-            l.password = ?
-          AND 
-            l.cpf = ?
-        `
-        connection.query(query, [cargo, inventario_id, tipo_coleta, pass, cpf], (error, results, fields)=>{
-          if(error) {
-            console.log(error.code,error.fatal)
-            res.json({retorno: -1, controle, error:error.code})
+        const login_bd = new nedb({filename: 'login.db', autoload: true})
+        login_bd.findOne({
+          cpf:cpf, 
+          password:password, 
+          login_status:'ATIVO'
+        }, (err, login) => {
+          if(err) {
+            console.log(err)
+            res.json({retorno: -1, controle, error:err})
             return
-          }
-          if (results.length) {
-            let newresults = results[0]
-            newresults['retorno'] = 0
-            newresults['controle'] = controle
-            newresults['login'] = 0
-            res.json(newresults)
-          }
-          else {
+          } else if(login){
+            res.json({
+              retorno: 0,
+              controle: controle,
+              usuario_id: login.usuario_id,
+              username: login.username,
+              tipo_coleta: tipo_coleta,
+              login: 0,
+            })
+          } else{
             console.log('CPF ou Senha inválida!')
             res.json({retorno: -1, controle, usuario_id: null,username: null,login: -1, tipo_coleta: null})
           }
-          connection.end()
         })
-      } else {
+      } else{
         console.log('CPF ou Senha inválida!')
         res.json({retorno: -1, controle, usuario_id: null,username: null,login: -1, tipo_coleta: null})
       }
@@ -203,28 +151,27 @@ function startExpress () {
 
   server.get('/inventario', (req, res) => {
     console.log('GET /inventario')
-    let connection = mysql.createConnection(env.config_mysql)
-    let query = `
-      SELECT 
-        id inventario_id, tipo_inventario, validade,
-        fabricacao, lote, itens_embalagem,
-        fornecedor, ignorar_zero_esq,
-        ignorar_zero_direita, marca
-      FROM inventario
-      WHERE id = ?
-    `
-    connection.query(query, [inventario_id], (error, results, fields)=>{
-      if(error) {
-        console.log(error.code,error.fatal)
-        res.json({retorno: -1, controle, error:error.code})
+    const inventario_bd = new nedb({filename: 'inventario.db', autoload: true})
+    inventario_bd.findOne({id: inventario_id}, (err, invent) => {
+      if(err) {
+        console.log(err)
+        res.json({retorno: -1, controle, error:err})
         return
-      }
-      if(results.length){
-        let newresults = results[0]
-        newresults['retorno'] = 0
-        newresults['controle'] = controle
-        res.json(newresults)
-      } else {
+      } else if(invent) {
+        res.json({
+          "retorno": 0, 
+          "controle": controle,
+          "tipo_inventario": invent.tipo_inventario,
+          "validade": invent.validade,
+          "fabricacao": invent.fabricacao,
+          "lote": invent.lote,
+          "itens_embalagem": invent.itens_embalagem,
+          "marca": invent.marca,
+          "fornecedor": invent.fornecedor,
+          "ignorar_zero_esq": invent.ignorar_zero_esq,
+          "ignorar_zero_direita": invent.ignorar_zero_direita
+        })
+      } else{
         res.json({
           "retorno": 0, 
           "controle": controle,
@@ -239,46 +186,38 @@ function startExpress () {
           "ignorar_zero_direita": null
         })
       }
-      connection.end()
     })
   })
 
   server.get('/enderecamento', (req, res) => {
     const { usuario_id } = req.query
     console.log('GET /enderecamento?usuario_id='+usuario_id)
+
+    const e_db = new nedb({filename: 'enderecamento.db', autoload: true})
+    const ue_db = new nedb({filename: 'usuario_enderecamento.db', autoload: true})
     if (usuario_id) {
-      let connection = mysql.createConnection(env.config_mysql)
-      let query = `
-        SELECT 
-          ue.enderecamento_id, 
-          e.descricao,
-          e.excecao
-        FROM 
-          usuario_enderecamento ue, 
-          enderecamento e
-        WHERE 
-          ue.inventario_id = ?
-        AND
-          ue.tipo = ?
-        AND
-          e.inventario_id = ?
-        AND 
-          ue.usuario_id = ?
-        AND
-          ue.status != 'CONCLUIDO'
-        AND 
-          ue.enderecamento_id = e.id
-      `
-      connection.query(query, [inventario_id, tipo_coleta, inventario_id, usuario_id], 
-        (error, results, fields)=>{
-        if(error) {
-          console.log(error.code,error.fatal)
-          res.json({retorno: -1, controle, error:error.code})
+      ue_db.find({inventario_id: inventario_id, usuario_id: Number(usuario_id), status: { $ne: 'CONCLUIDO' }},(err, ue) => {
+        if(err) {
+          console.log(err);
+          res.json({retorno: -1, controle, error:err});
           return
+        } else {
+          e_db.find({ id: { $in : ue.map(p => p.enderecamento_id) }}, (err, e) => {
+            if(err) {
+              console.log(err);
+              res.json({retorno: -1, controle, error:err});
+              return
+            } else {
+              let end = e.map(item => ({
+                enderecamento_id: item.id,
+                descricao: item.descricao,
+                excecao: item.excecao
+              }));
+              res.json(end);
+            }
+          });
         }
-        res.json(results)
-        connection.end()
-      });
+      })
     } else {
       console.log('usuario_id inválido!')
       res.json({retorno: -1, controle})
@@ -289,42 +228,14 @@ function startExpress () {
     console.log('POST /coleta')
     if (controle === 'play') {
       const coletas  = req.body || []
-      let values = []
-
-      for(var i=0; i< coletas.length; i++)
-        values.push([
-          coletas[i].inventario_id,
-          coletas[i].tipo_coleta,
-          coletas[i].usuario_id,
-          coletas[i].data,
-          coletas[i].hora,
-          coletas[i].enderecamento,
-          coletas[i].cod_barra,
-          coletas[i].validade,
-          coletas[i].fabricacao,
-          coletas[i].lote,
-          coletas[i].itens_embalagem,
-          coletas[i].marca,
-          coletas[i].fornecedor
-        ])
-      let connection = mysql.createConnection(env.config_mysql)
-      let query = `
-        INSERT INTO 
-          coleta (inventario_id, tipo_coleta, usuario_id, data, hora, enderecamento,
-                  cod_barra, validade, fabricacao,
-                  lote, itens_embalagem, marca, fornecedor)
-        VALUES ?
-      `
-      
-      console.log(values, query)
-      connection.query(query, [values], (error, results, fields)=>{
-        if(error) {
-          console.log(error.code,error.fatal)
-          res.json({retorno: -1, controle, error:error.code})
-          return
+      console.log(typeof(coletas), coletas)
+      let coleta_db = new nedb({filename: 'coleta.db', autoload: true})
+      coleta_db.insert(coletas, err => {
+        if (err) {
+          res.json({retorno: -1, controle, error:err})
+        } else {
+          res.json({retorno: 0, controle, coletas})
         }
-        res.json({retorno: 0, controle, results})
-        connection.end()
       })
     } else {
       res.json({retorno: 0, controle})
@@ -334,55 +245,67 @@ function startExpress () {
 
   server.get('/base', (req, res) => {
     console.log('GET /base')
-    let connection = mysql.createConnection(env.config_mysql)
-    let query = `
-      SELECT 
-        cod_barra, descricao_item
-      FROM 
-        base
-      WHERE
-        inventario_id = ?
-    `
-    connection.query(query, [inventario_id], (error, results, fields)=>{
-      if(error) {
-        console.log(error.code,error.fatal)
-        res.json({retorno: -1, controle, error:error.code})
-        return
+    let base_db = new nedb({filename: 'base.db', autoload: true})
+    base_db.find({
+      inventario_id: inventario_id
+    },(err, docs)=>{
+      if(err) {
+        console.log(err);
+        res.json({retorno: -1, controle, error:err});
+      } else {
+        let base = docs.map(item => ({
+          cod_barra: item.item,
+          descricao_item: item.descricao_item
+        }))
+        res.json(base);
       }
-      res.json(results)
-      connection.end()
-    })
+    });
+    // console.log('GET /base')
+    // let connection = mysql.createConnection(env.config_mysql)
+    // let query = `
+    //   SELECT 
+    //     cod_barra, descricao_item
+    //   FROM 
+    //     base
+    //   WHERE
+    //     inventario_id = ?
+    // `
+    // connection.query(query, [inventario_id], (error, results, fields)=>{
+    //   if(error) {
+    //     console.log(error.code,error.fatal)
+    //     res.json({retorno: -1, controle, error:error.code})
+    //     return
+    //   }
+    //   res.json(results)
+    //   connection.end()
+    // })
   })
 
   server.post('/end_status', (req, res) => {
     console.log('POST /end_status')
     if (controle === 'play') {
       const coletas  = req.body || []
-      let values = []
-      let query = ""
-
-      for(var i=0; i< coletas.length; i++){
-        values.push(
-          coletas[i].status,
-          coletas[i].enderecamento_id,
-          coletas[i].inventario_id,
-          tipo_coleta
-        )
-        query = query + "UPDATE usuario_enderecamento SET status = ? WHERE enderecamento_id = ? AND inventario_id = ? AND tipo = ?;"
-      }
-      console.log(values, query)
-
-
-      let connection = mysql.createConnection(env.config_mysql)
-      connection.query(query, values, (error, results, fields)=>{
-        if(error) {
-          console.log(error.code,error.fatal)
-          res.json({retorno: -1, controle, error:error.code})
-          return
+      let cout_err = 0
+      let ue_db = new nedb({filename: 'usuario_enderecamento.db', autoload: true});
+      Promise.resolve(
+        coletas.map(element => {
+          ue_db.update( { 
+            enderecamento_id : Number(element.enderecamento_id), 
+            inventario_id : Number(element.inventario_id), 
+            tipo: tipo_coleta 
+          }, { $set: { status : element.status } }, {multi: true}, err => {
+            if (err) {
+              cout_err++;
+            }
+          })
+        })
+      ).then(() => {
+        if (cout_err) {
+          res.json({retorno: -1, controle, error: ''})
+        } else{
+          res.json({retorno: 0, controle, coletas})
         }
-        res.json({retorno: 0, controle, results})
-        connection.end()
-      })
+      });
     } else {
       res.json({retorno: 0, controle})
       console.log(controle)
@@ -393,35 +316,65 @@ function startExpress () {
     console.log('POST /end_delete')
     if (controle === 'play') {
       const coletas  = req.body || []
-      let values = []
-      let query = ""
-
-      for(var i=0; i< coletas.length; i++){
-        values.push(
-          coletas[i].inventario_id,
-          coletas[i].tipo_coleta,
-          coletas[i].enderecamento,
-          coletas[i].data,
-          coletas[i].hora
-        )
-        query = query + "delete from coleta where inventario_id=? and tipo_coleta=? and enderecamento=? and data <= ? and hora <= ?;"
-      }
-      console.log(values, query)
-
-      let connection = mysql.createConnection(env.config_mysql)
-      connection.query(query, values, (error, results, fields)=>{
-        if(error) {
-          console.log(error.code,error.fatal)
-          res.json({retorno: -1, controle, error:error.code})
-          return
+      let cout_err = 0
+      let coleta_db = new nedb({filename: 'coleta.db', autoload: true})
+      Promise.resolve(
+        coletas.map(element => {
+          coleta_db.remove( { 
+            inventario_id : Number(element.inventario_id), 
+            tipo_coleta : element.tipo_coleta, 
+            enderecamento: element.enderecamento,
+            data: { $lte: element.data },
+            hora: { $lte: element.hora }
+          }, {multi: true}, err => {
+            if (err) {
+              cout_err++;
+            }
+          })
+        })
+      ).then(() => {
+        if (cout_err) {
+          res.json({retorno: -1, controle, error: ''})
+        } else{
+          res.json({retorno: 0, controle, coletas})
         }
-        res.json({retorno: 0, controle, results})
-        connection.end()
-      })
+      });
     } else {
       res.json({retorno: 0, controle})
       console.log(controle)
     }
+    // console.log('POST /end_delete')
+    // if (controle === 'play') {
+    //   const coletas  = req.body || []
+    //   let values = []
+    //   let query = ""
+
+    //   for(var i=0; i< coletas.length; i++){
+    //     values.push(
+    //       coletas[i].inventario_id,
+    //       coletas[i].tipo_coleta,
+    //       coletas[i].enderecamento,
+    //       coletas[i].data,
+    //       coletas[i].hora
+    //     )
+    //     query = query + "delete from coleta where inventario_id=? and tipo_coleta=? and enderecamento=? and data <= ? and hora <= ?;"
+    //   }
+    //   console.log(values, query)
+
+    //   let connection = mysql.createConnection(env.config_mysql)
+    //   connection.query(query, values, (error, results, fields)=>{
+    //     if(error) {
+    //       console.log(error.code,error.fatal)
+    //       res.json({retorno: -1, controle, error:error.code})
+    //       return
+    //     }
+    //     res.json({retorno: 0, controle, results})
+    //     connection.end()
+    //   })
+    // } else {
+    //   res.json({retorno: 0, controle})
+    //   console.log(controle)
+    // }
   })
 
   server.get('/', (req, res) => {
