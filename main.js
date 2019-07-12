@@ -7,11 +7,15 @@ const url = require('url')
 let controle = 'stop' // 'pause' 'play' 'finalizado'
 let inventario_id = 0
 let tipo_coleta = 'INVENTARIO'
-var nedb = require('nedb');
-var mysql = require('mysql');
-const env = require('./.env')
+const nedb = require('nedb');
+const mysql = require('mysql');
+const env = require('./.env');
+const PouchDB = require('pouchdb');
+PouchDB.plugin(require('pouchdb-find'));
+const pouchdb_base = new PouchDB('https://arkodb-server.herokuapp.com/arko_server');
+// var pouchdb_base = new PouchDB(path.join(__dirname, 'mydb'));
 
-var db_nedb = [
+let db_nedb = [
   {name:'login', db : new nedb({filename: 'login.db', autoload: true})},
   {name:'inventario', db : new nedb({filename: 'inventario.db', autoload: true})},
   {name:'agendamento', db : new nedb({filename: 'agendamento.db', autoload: true})},
@@ -83,21 +87,9 @@ function createWindow() {
 app.on('ready', createWindow);
 
 // Quit when all windows are closed.
-app.on('window-all-closed', () => {
-  // On macOS it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+app.on('window-all-closed', () => { (process.platform !== 'darwin') && app.quit() }); // On macOS, menu bar
 
-app.on('activate', () => {
-  // On macOS it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) {
-    createWindow();
-  }
-});
+app.on('activate', () => { (mainWindow === null) && createWindow() }); // On macOS, dock
 
 function startExpress () {
   const server = require('./server')
@@ -384,25 +376,49 @@ function startExpress () {
 }
 
 function loadDB(){
-  db_nedb.forEach(db => {
-    let connection = mysql.createConnection(env.config_mysql);
-    connection.query('SELECT * FROM ' + db.name +';', [],(error, rows, fields) => {
-    if(error){
-        console.log(error.code,error.fatal)
-        return
+  for (let index = 0; index < db_nedb.length; index++) {
+    const db = db_nedb[index];
+    if (db.name === 'base') {
+      pouchdb_base.find({selector: {}})
+      .then(d=>{
+        db.db.remove({}, {multi:true})
+        db.db.insert(d.docs, (err) => {
+          if(err){
+            console.log(err); //caso ocorrer algum erro        
+            return;
+          } else {
+            console.log("dados carregados de " + db.name);
+          }
+        });
+      })
+      .catch(err => { 
+        console.log(err);
+      })
+    } else {
+      let connection = mysql.createConnection(env.config_mysql);
+      connection.query('SELECT * FROM ' + db.name +';', [],(error, rows, fields) => {
+      if(error){
+          console.log(db.name,error.code,error.fatal)
+          return;
+      }
+      connection.end();
+      var results = []
+      for (var i = 0;i < rows.length; i++) {
+        results.push(JSON.parse(JSON.stringify(rows[i])));
+      }
+      db.db.remove({}, {multi:true})
+      db.db.insert(results, function(err){
+        if(err){
+          console.log(err); //caso ocorrer algum erro        
+          return;
+        } else {
+          console.log("dados carregados de " + db.name);
+        }
+      }); 
+    });
     }
-    connection.end();
-    var results = []
-    for (var i = 0;i < rows.length; i++) {
-      results.push(JSON.parse(JSON.stringify(rows[i])));
-    }
-    db.db.remove({}, {multi:true})
-    db.db.insert(results, function(err){
-      if(err)return console.log(err); //caso ocorrer algum erro        
-      console.log("dados carregados de " + db.name);
-    }); 
-  });
-});}
+  }
+}
 
 const { ipcMain } = require('electron')
 ipcMain.on('asynchronous-message', (event, arg) => {
