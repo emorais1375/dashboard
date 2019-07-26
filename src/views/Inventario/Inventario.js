@@ -1,17 +1,14 @@
 import React, { Component } from "react";
 const { ipcRenderer } = window.require('electron')
-import mysql from 'mysql';
-import env from '../../../.env'
 import nedb from 'nedb'
-var inventario_db = new nedb({filename: 'inventario.db', autoload: true})
-var agendamento_db = new nedb({filename: 'agendamento.db', autoload: true})
+var inventario_db = new nedb({filename: 'data/inventario.json', autoload: true})
+var agendamento_db = new nedb({filename: 'data/agendamento.json', autoload: true})
 
 import InventNavbar from "../../components/Navbars/InventNavBar"
 import {
 	Container,
 	Table,
 	Tooltip,
-	OverlayTrigger,
 	Button
 } from "react-bootstrap"
 class Inventario extends Component {
@@ -59,32 +56,6 @@ class Inventario extends Component {
 				})
 				
 			}
-			/*
-      let connection = mysql.createConnection(env.config_mysql);
-  		let query = `
-  			SELECT 
-  				i.id,
-  				data_agendamento as 'data',
-  				hora_agendamento as 'hora',
-  				agendamento_status as 'status',
-					i.tipo_inventario,
-					inventario_status
-  			FROM 
-  				inventario i, agendamento a 
-  			WHERE 
-  				usuario_coordenador_id = ?
-  			AND 
-  				i.agendamento_id = a.id
-  		`
-  		connection.query(query, [usuario_coordenador_id],(error, inventarios, fields)=>{
-	      if(error) {
-	        console.log(error.code,error.fatal);
-	        return;
-	      }
-	      this.setState({inventarios})
-	      connection.end();
-			})
-			*/
   }
 
   abrirInventario(e, inv_id, inv_tipo, inv_status) {
@@ -98,8 +69,7 @@ class Inventario extends Component {
   }
 
   render() {
-  	const { inventarios, usuario_coordenador_id} = this.state
-    const abrir = <Tooltip id="remove_tooltip">Abrir</Tooltip>;
+  	const { inventarios} = this.state
     return (
       <div className="content">
         <InventNavbar />

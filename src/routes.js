@@ -12,7 +12,7 @@ import Login from "./views/Login/Login";
 import Inventario from "./views/Inventario/Inventario";
 import Divergencia from "./views/Divergencia/Divergencia";
 import Divergencia1 from "./views/Divergencia/Divergencia1";
-import Codigo from "./views/Codigo";
+import Codigo from "./views/Codigo/Codigo";
 
 const dashboardRoutes = [
   {

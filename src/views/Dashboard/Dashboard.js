@@ -2,11 +2,11 @@ import React, { Component } from "react";
 import mysql from 'mysql';
 import env from '../../../.env'
 import nedb from 'nedb'
-var base_db = new nedb({filename: 'base.db', autoload: true})
-var coleta_db = new nedb({filename: 'coleta.db', autoload: true})
-var usuario_enderecamento = new nedb({filename: 'usuario_enderecamento.db', autoload: true})
-var enderecamento = new nedb({filename: 'enderecamento.db', autoload: true})
-var usuario = new nedb({filename: 'usuario.db', autoload: true})
+const base_db = new nedb({filename: 'data/base.json', autoload: true})
+const coleta_db = new nedb({filename: 'data/coleta.json', autoload: true})
+const usuario_enderecamento = new nedb({filename: 'data/usuario_enderecamento.json', autoload: true})
+const enderecamento = new nedb({filename: 'data/enderecamento.json', autoload: true})
+const usuario = new nedb({filename: 'data/usuario.json', autoload: true})
 import { 
   Container, 
   Row, 
@@ -19,6 +19,7 @@ import {
 } from "react-bootstrap";
 import { Card } from "../../components/Card/Card";
 // import { Card } from 'react-bootstrap'
+import { BootstrapTable, TableHeaderColumn}  from 'react-bootstrap-table'
 const { ipcRenderer } = window.require('electron')
 
 class Dashboard extends Component {
@@ -49,6 +50,18 @@ constructor(props) {
   this.handleShow = this.handleShow.bind(this);
   this.handleClose = this.handleClose.bind(this);
 }
+// lerDados() {
+//   base_db.find(
+//     {inventario_id: inventario_id},
+//     {cod_barra:1,descricao_item:1,id:1,saldo_estoque:1,_id:0},
+//     (err,base2) => this.setState({base2})
+//   )
+
+//   coleta_db.find({},(err,coleta2) => this.setState({coleta2}))
+//   usuario_enderecamento.find({},(err,ue) => this.setState({ue}))
+//   enderecamento.find({},(err,enderecamento) => this.setState({enderecamento2}))
+//   usuario.find({},(err,usuario) => this.setState({usuario}))
+// }
 tick() {
   let s = this.state.segundos + 1; 
   let min = this.state.minutos;
@@ -121,26 +134,13 @@ lerBase(){
   let {inventario_id} = this.state;
   console.log(inventario_id)
   if (inventario_id) {
-    base_db.find({inventario_id: parseInt(inventario_id)}).sort({ saldo_estoque: 1 }).exec(function(err, base){
-      this.setState({ base })
-    }.bind(this));
-    /*
-    let connection = mysql.createConnection(env.config_mysql);
-    let query = `
-      SELECT id, cod_barra, saldo_estoque AS 'qtd' 
-      FROM base 
-      WHERE inventario_id=?
-      ORDER BY qtd DESC
-    `
-    connection.query(query, [inventario_id],(error, base, fields) => {
-      if(error){
-          console.log(error.code,error.fatal)
-          return
+    base_db.find({inventario_id: parseInt(inventario_id)}, {_id:0,id:1, cod_barra:1,descricao_item:1,saldo_estoque:1}).sort({ saldo_estoque: -1 }).exec(function(err, base){
+      if (err) {
+        alert(`Erro ao ler a base, cod:. ${err}`)
+      } else {
+        this.setState({ base })
       }
-      this.setState({ base })
-      connection.end();
-    })
-    */
+    }.bind(this));
   } else {
     console.log('Vazio!')
   }
@@ -148,43 +148,21 @@ lerBase(){
 lerColeta(){
   let {inventario_id, tipo_coleta} = this.state;
   if (inventario_id) {
-    coleta_db.find({inventario_id: parseInt(inventario_id), tipo_coleta: tipo_coleta}, function(err, coletas){
+    coleta_db.find({inventario_id: parseInt(inventario_id), tipo_coleta: tipo_coleta},{cod_barra:1, enderecamento:1, itens_embalagem:1, _id:0}, function(err, coletas){
       var results = []
       coletas.forEach(col => {
-        if(!results.find(function(elem, i, array){
-          if(elem.cod_barra == col.cod_barra){
+        if(!results.find( elem => {
+          if(elem.cod_barra === col.cod_barra && elem.enderecamento === col.enderecamento){
             elem.qtd += col.itens_embalagem
             return true;
           }
           return false;
         })){
-          results.push({'cod_barra' : col.cod_barra, 'qtd':col.itens_embalagem})
+          results.push({'cod_barra' : col.cod_barra, 'enderecamento': col.enderecamento,'qtd':col.itens_embalagem, 'id': col.cod_barra+col.enderecamento})
         }
-      });
-      results.sort(function(a,b){
-        return b.qtd - a.qtd;
       });
       this.setState({coleta: results })
     }.bind(this))
-    /*
-    let connection = mysql.createConnection(env.config_mysql);
-    let query = `
-      SELECT cod_barra, SUM(itens_embalagem) as 'qtd'
-      FROM coleta
-      WHERE inventario_id = ?
-      AND tipo_coleta = ?
-      GROUP BY cod_barra
-      ORDER BY qtd DESC
-    `
-    connection.query(query, [inventario_id, tipo_coleta] ,(error, coleta, fields) => {
-      if(error){
-          console.log(error.code,error.fatal)
-          return
-      }
-      this.setState({ coleta })
-      connection.end();
-    })
-    */
   } else {
     console.log('Vazio!')
   }
@@ -192,22 +170,23 @@ lerColeta(){
 lerEnd() {
   let {inventario_id, tipo_coleta} = this.state;
   if (inventario_id) {
-    usuario_enderecamento.find({inventario_id:parseInt(inventario_id), tipo:tipo_coleta}, function(err, rows){
-      var results = [];
-      new Promise(function(resolve, reject){
-        rows.forEach(element => {
-          enderecamento.findOne({id: element.enderecamento_id}, function(err, end){
-            results.push({'id':element.id, 'descricao': end.descricao, 'status': element.status})
-            resolve(results);
-          })
-        });
-      }).then(()=> {
-        console.log(results);
-        this.setState({enderecamento:results})
-      });
-      
-    }.bind(this))
-    /*
+    // usuario_enderecamento.find({inventario_id:parseInt(inventario_id), tipo:tipo_coleta}, function(err, rows){
+    //   var results = [];
+    //   new Promise(function(resolve, reject){
+    //     rows.forEach(element => {
+    //       enderecamento.findOne({id: element.enderecamento_id}, function(err, end){
+    //         results.push({'id':element.id, 'descricao': end.descricao, 'status': element.status})
+    //         resolve(results);
+    //       })
+    //     });
+    //   }).then(()=> {
+    //     results.sort(function(a,b){
+    //       return b.id - a.id;
+    //     });
+    //     this.setState({enderecamento:results})
+    //   });
+    // }.bind(this))
+    
     let connection = mysql.createConnection(env.config_mysql);
     let query = `
       select e.id, descricao, status
@@ -223,7 +202,7 @@ lerEnd() {
       this.setState({ enderecamento })
       connection.end();
     })
-    */
+    
   } else {
     console.log('Vazio!')
   }  
@@ -231,39 +210,39 @@ lerEnd() {
 lerEquipe() {
   let {inventario_id} = this.state;
   if (inventario_id) {
-    usernames = {}
-    usuario.find({id:parseInt(element.usuario_id)}, function(err, user){
-      usernames[user.id] = user.nome;
-    });
-    usuario_enderecamento.find({inventario_id: parseInt(inventario_id)}, function(err, rows){
-      console.log(rows);
-      var users = []
-      rows.forEach(element => {
-        if(!users.find(function(user, i, array){
-          if(user.usuario_id == element.usuario_id){
-            if(element.tipo == 'INVENTARIO'){
-              user.qtd_enderecamento += 1;
-              if(element.status == 'CONCLUIDO'){
-                user.qtd_concluido += 1;
-              }
-              user.progress = (user.qtd_concluido / user.qtd_enderecamento)*100;
-            }
-            return true;
-          }else {
-            return false;
-          }
-        })){
-          new Promise(function(resolve, reject){
+    // usernames = {}
+    // usuario.find({id:parseInt(element.usuario_id)}, function(err, user){
+    //   usernames[user.id] = user.nome;
+    // });
+    // usuario_enderecamento.find({inventario_id: parseInt(inventario_id)}, function(err, rows){
+    //   console.log(rows);
+    //   var users = []
+    //   rows.forEach(element => {
+    //     if(!users.find(function(user, i, array){
+    //       if(user.usuario_id == element.usuario_id){
+    //         if(element.tipo == 'INVENTARIO'){
+    //           user.qtd_enderecamento += 1;
+    //           if(element.status == 'CONCLUIDO'){
+    //             user.qtd_concluido += 1;
+    //           }
+    //           user.progress = (user.qtd_concluido / user.qtd_enderecamento)*100;
+    //         }
+    //         return true;
+    //       }else {
+    //         return false;
+    //       }
+    //     })){
+    //       new Promise(function(resolve, reject){
             
-          }).then((result)=>{
-            users.push({'nome': result, 'usuario_id': element.usuario_id, 'qtd_enderecamento':1, 'qtd_concluido': 1, 'progress':0})
+    //       }).then((result)=>{
+    //         users.push({'nome': result, 'usuario_id': element.usuario_id, 'qtd_enderecamento':1, 'qtd_concluido': 1, 'progress':0})
       
-          })
-         }
-      });
-      console.log(users);
-    })
-    /*
+    //       })
+    //      }
+    //   });
+    //   console.log(users);
+    // })
+    
     let connection = mysql.createConnection(env.config_mysql);
     let query = `
       select usuario_id, nome, COUNT(enderecamento_id) qtd_enderecamento,
@@ -286,7 +265,7 @@ lerEquipe() {
       this.setState({ equipe, progressTotal })
       connection.end();
     })
-    */
+    
   } else {
     console.log('Vazio!')
   }  
@@ -416,6 +395,11 @@ handleShow(ev, key) {
 }
 
 render() {
+  const options = {
+    defaultSortName: 'valor_divergente', 
+    noDataText: 'Não há dados para exibir',
+    exportCSVText: 'Exportar para csv'
+  }
   const { base, coleta, timeFormat, isPaused, enderecamento, equipe, enderecamentoCod, progressTotal } = this.state
   return (
     <div className="content">
@@ -508,65 +492,35 @@ render() {
           </Col>
         </Row>
         <Row>
-          <Col md={6}>
-            <Card 
-              title="INVENTÁRIO"
-              ctTableFullWidth
-              ctTableResponsive
-              content={ <div style={{
-                overflow: 'auto',
-                height: '200px'
+          <Col md={6} style={{
+                'marginBottom': '30px'
             }}>
-                <Table striped>
-                  <thead>
-                    <tr>
-                      <th>EAN</th>
-                      <th>QUANT</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {coleta.map((prop, key) => {
-                      return (
-                        <tr key={prop.cod_barra}>
-                          <td>{prop.cod_barra}</td>
-                          <td>{prop.qtd}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </Table></div>
-              }
-            />
+          <BootstrapTable data={coleta} height='250' scrollTop={ 'Bottom' } 
+            search exportCSV options={ {
+    defaultSortName: 'valor_divergente', 
+    noDataText: 'Não há dados para exibir',
+    exportCSVText: 'Exportar para csv',
+    defaultSortName: 'qtd',  // default sort column name
+    defaultSortOrder: 'desc'  // default sort order
+  } }>
+              <TableHeaderColumn dataField='id' isKey hidden>ID</TableHeaderColumn>
+              <TableHeaderColumn dataField='cod_barra' width='140' >EAN COLETA ({coleta.length})</TableHeaderColumn>
+              <TableHeaderColumn dataField='enderecamento'>Enderecamento</TableHeaderColumn>
+              <TableHeaderColumn dataField='qtd' width='70'>QUANT</TableHeaderColumn>
+            </BootstrapTable>
           </Col>
-          <Col md={6}>
-            <Card
-              title="ESTOQUE"
-              ctTableFullWidth
-              ctTableResponsive
-              content={<div style={{
-                overflow: 'auto',
-                height: '200px'
+          <Col md={6} style={{
+                'marginBottom': '30px'
             }}>
-                <Table striped >
-                  <thead>
-                    <tr>
-                      <th>EAN</th>
-                      <th>SALDO</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {base.map((prop, key) => {
-                      return (
-                        <tr key={prop.id}>
-                          <td>{prop.cod_barra}</td>
-                          <td>{prop.qtd}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </Table></div>
-              }
-            />
+            <BootstrapTable
+              
+             data={base} height='250' scrollTop={ 'Bottom' } 
+              search options={ options }>
+              <TableHeaderColumn dataField='id' isKey hidden>ID</TableHeaderColumn>
+              <TableHeaderColumn dataField='cod_barra' width='140' >EAN BASE ({base.length})</TableHeaderColumn>
+              <TableHeaderColumn dataField='descricao_item' tdStyle={{whiteSpace: 'normal'}}>DESCRIÇÃO</TableHeaderColumn>
+              <TableHeaderColumn dataField='saldo_estoque' width='70'>SALDO</TableHeaderColumn>
+            </BootstrapTable>
           </Col>
         </Row>
       </Container>
@@ -575,27 +529,11 @@ render() {
           <Modal.Title>Códigos Inventariados</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <div style={{
-                overflow: 'auto',
-                height: '350px'
-            }}><Table striped>
-            <thead>
-              <tr>
-                <th>EAN</th>
-                <th>QUANT</th>
-              </tr>
-            </thead>
-            <tbody>
-              {enderecamentoCod.map((prop, key) => {
-                return (
-                  <tr key={prop.cod_barra}>
-                    <td>{prop.cod_barra}</td>
-                    <td>{prop.qtd}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </Table></div>
+          <BootstrapTable data={enderecamentoCod} height='350' scrollTop={ 'Bottom' } 
+            search exportCSV options={ options }>
+            <TableHeaderColumn dataField='cod_barra' isKey >EAN</TableHeaderColumn>
+            <TableHeaderColumn dataField='qtd' >QUANT</TableHeaderColumn>
+          </BootstrapTable>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={this.handleClose}>

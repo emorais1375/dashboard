@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import mysql from 'mysql';
 import env from '../../../.env'
+import nedb from 'nedb'
 import {
 	Container,
 	Table,
@@ -10,6 +11,7 @@ import {
   Col,
   Modal
 } from "react-bootstrap"
+import readXlsxFile from 'read-excel-file/node';
 import Download from '../../components/Download'
 import NaoContados from "../../components/NaoContados";
 import ReactExport from "react-data-export";
@@ -19,7 +21,10 @@ const ExcelFile = ReactExport.ExcelFile;
 const ExcelSheet = ReactExport.ExcelFile.ExcelSheet;
 const ExcelColumn = ReactExport.ExcelFile.ExcelColumn;
 
+
+
 import { BootstrapTable, TableHeaderColumn}  from 'react-bootstrap-table'
+import { ipcRenderer } from "electron";
 
 function jobStatusValidator(value) {
   const nan = isNaN(parseInt(Number(value), 10));
@@ -43,7 +48,9 @@ class Divergencia extends Component {
       coleta: [],
       organizar_por: 'Valor',
       tipo_coleta: 'INVENTARIO',
-      inventario_id: localStorage.getItem('inv_id') || ''
+      // inventario_id: localStorage.getItem('inv_id') || '',
+      inventario_id: 17,
+      file: null
     }
 
     this.onSelectAll = this.onSelectAll.bind(this);
@@ -57,6 +64,10 @@ class Divergencia extends Component {
     this.handleClose = this.handleClose.bind(this);
   }
   componentDidMount() {
+    // const thisDb = ipcRenderer.sendSync('getBase', 'base')
+    // console.log('base: ',thisDb)
+    // const thisDb2 = ipcRenderer.sendSync('getColeta', 'coleta')
+    // console.log('coleta: ',thisDb2)
     this.gerarDivergencia()
     this.getBase().then(()=>{
       this.getColeta().then(()=>{
@@ -68,21 +79,79 @@ class Divergencia extends Component {
       alert('Erro ao ler a base: '+code+fatal)
     })
   }
-  getBase(){
-    let connection = mysql.createConnection(env.config_mysql);
-    let query = 'select * from base where inventario_id = ?'
-    return new Promise((resolve, reject)=>{
-      connection.query(query, [this.state.inventario_id],(error, base, fields) => {
-        if(error){
-            console.log(error.code,error.fatal)
-            reject(error.code,error.fatal)
-            return 0
-        }
-        this.setState({base})
-        connection.end();
-        resolve()
+  onFormSubmit(e){
+    e.preventDefault() // Stop form submit
+    const {inventario_id, file} = this.state;
+    const base_db = new nedb({filename: 'data/base.json', autoload: true})
+    let cout_err = 0
+    if(file !== null) {
+      readXlsxFile(file.path).then((rows) => {
+        Promise.resolve(
+          rows.slice(1).forEach( element =>
+            {
+              base_db.update({
+                'cod_barra': element[0].toString(),
+                'inventario_id': Number(inventario_id)
+              }, { $set: { saldo_estoque : Number(element[1]) } }, {multi: false}, (err)=>{
+                if (err) {
+                  cout_err++;
+                  console.log(err)
+                }
+                console.log(`${element[0].toString()} inserido`)
+              })
+            }
+          )
+        ).then(() => {
+          if (cout_err) {
+            alert('Erro ao atualizar saldo da base')
+          } else{
+            alert('Saldo da base atualizado')
+          }
+          console.log(rows)
+          base_db.find({},console.log)
+        })
       })
+    }
+  }
+  onChange(e) {
+    this.setState({file:e.target.files[0]})
+  }
+  getBase(){
+    return new Promise((resolve, reject)=>{
+      const base = ipcRenderer.sendSync('getBase', 'base')
+      this.setState({base})
+      resolve()
+      // const base_db = new nedb({filename: 'data/base.json'})
+      // let _this = this
+      // const { inventario_id } = this.state
+      // base_db.loadDatabase(err => {
+      //   base_db.find({inventario_id: Number(inventario_id)}, (err, base) => {
+      //     if (err) {
+      //       alert(`Erro ao ler a base, cod: ${err}`)
+      //       reject(err)
+      //     } else {
+      //       console.log(base)
+      //       _this.setState({base})
+      //       resolve()
+      //     }
+      //   })
+
+      // })
     })
+    // let connection = mysql.createConnection(env.config_mysql);
+    // let query = 'select * from base where inventario_id = ?'
+    // return new Promise((resolve, reject)=>{
+    //   connection.query(query, [this.state.inventario_id],(error, base, fields) => {
+    //     if(error){
+    //         console.log(error.code,error.fatal)
+    //         reject(error.code,error.fatal)
+    //         return 0
+    //     }
+    //     this.setState({base})
+    //     connection.end();
+        // resolve()
+    //   })
+    // })
   }
   getColeta(){
     const { inventario_id, tipo_coleta } = this.state
@@ -94,16 +163,21 @@ class Divergencia extends Component {
       FROM coleta  where inventario_id = ? and tipo_coleta = ?
       GROUP BY cod_barra `
     return new Promise((resolve, reject)=>{
-      connection.query(query, [inventario_id, tipo_coleta],(error, coleta, fields) => {
-        if(error){
-            console.log(error.code,error.fatal)
-            reject(error.code,error.fatal)
-            return 0
-        }
-        this.setState({coleta})
-        connection.end();
-        resolve()
-      })
+      const coleta = ipcRenderer.sendSync('getColeta', 'coleta')
+      this.setState({coleta})
+      resolve()
+
+
+      // connection.query(query, [inventario_id, tipo_coleta],(error, coleta, fields) => {
+      //   if(error){
+      //       console.log(error.code,error.fatal)
+      //       reject(error.code,error.fatal)
+      //       return 0
+      //   }
+      //   this.setState({coleta})
+      //   connection.end();
+      //   resolve()
+      // })
     })
   }
   createDivergencia(){
@@ -474,24 +548,23 @@ class Divergencia extends Component {
         </div>
         <h1>Divergencia</h1>
         <Container fluid>
+        <Row>
+          <Col>
+            <Form onSubmit={this.onFormSubmit.bind(this)}>
+              <Form.Label>Carregar arquivo</Form.Label>
+              <Form.Control size="sm" type="file" onChange={this.onChange.bind(this)} />
+              <div className="p-2"/>
+              <Button  variant="info" type="submit">Carregar</Button>
+              <div className="p-2"/>
+            </Form>
+          </Col>
+        </Row>
           <Row>
             <Col lg={4} md={4} sm={4}>
               <Button variant="info" onClick={this.auditar}>
                 Auditoria
               </Button>
             </Col>
-            {/* <Col lg={5} md={4} sm={4}></Col>
-            <Col lg={3} md={4} sm={4}>
-              <Form.Group as={Col} controlId="formGridState">
-                <Form.Label>Organizar por:{checkAll}</Form.Label>
-                <Form.Control as="select"
-                  onChange={this.handleChange2}
-                  value={this.state.organizar_por}>
-                    <option>Valor</option>
-                    <option>Quantidade</option>
-                </Form.Control>
-              </Form.Group>
-            </Col> */}
           </Row>
           <Row>
             <BootstrapTable data={divergencia2} height='340' scrollTop={ 'Bottom' }
@@ -504,11 +577,8 @@ class Divergencia extends Component {
                   for (const prop in row) {
                     rowStr += prop + ': ' + row[prop] + '\n';
                   }
-
-                  // alert('Toda a linha :\n' + rowStr);
                 },
                 afterSaveCell: (row, cellName, cellValue)=>{
-                  // alert(`${row['qtd_divergencia']} ${row['saldo_estoque']}`)
                   let div = this.state.divergencia2.map(item => {
                     if(item['base_id'] === row['base_id']) {
                       item['saldo_estoque'] =  Number(row['saldo_estoque'])
@@ -519,8 +589,6 @@ class Divergencia extends Component {
                   })
                   this.setState({divergencia2: div})
                   console.table(this.state.divergencia2)
-                  // row['qtd_divergencia'] =  row['qtd_inventario'] - row['saldo_estoque']
-                  // row['valor_divergente'] =  row['qtd_divergencia']*row['valor_custo']
                   return true;
                 }
               }}
@@ -538,58 +606,6 @@ class Divergencia extends Component {
   return `<i class='glyphicon glyphicon-usd'>R$</i> ${cell}`;
 } }>Valor</TableHeaderColumn>
             </BootstrapTable>
-            {/* <Col md={12} style={{
-                overflow: 'auto',
-                height: '383px'
-            }}>
-          		<Table striped size="sm" responsive>
-                <thead>
-                	<tr>
-                    <th>EAN</th>
-                    <th>Descrição</th>
-                    <th>Coleta</th>
-                    <th>Saldo</th>
-                    <th>Quantidade</th>
-                    <th>Valor</th>
-                		<th>
-                        <Form.Check
-                          label="Auditoria"
-                          onChange={e => this.handleChangeCheckAll(e)}
-                          checked = {checkAll}
-    		        				/>
-                    </th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                	{divergencia2.map((prop,key)=>{
-                    if(prop.qtd_divergencia)
-                      return (
-                        <tr key={prop.base_id}>
-                          <td>{prop.cod_barra}</td>
-                          <td>{prop.descricao_item}</td>
-                          <td>{prop.qtd_inventario}</td>
-                          <td>{prop.saldo_estoque}</td>
-                          <td>{prop.qtd_divergencia}</td>
-                          <td>{prop.valor_divergente}</td>
-                          <td>
-                            <Form.Check
-                              checked={prop.auditar==='SIM'?true:checkAll?true:false}
-                              onChange={e => this.handleChange(e, key)}
-                            />
-                          </td>
-                          <td>
-                            <Button variant="info" onClick={e => this.handleShow(e, prop)}>
-                              Editar
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    return null;
-                	})}
-                </tbody>
-              </Table>
-            </Col> */}
           </Row>
       	</Container>
         <Modal show={showModal} onHide={this.handleClose}>

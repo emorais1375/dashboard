@@ -16,15 +16,15 @@ const pouchdb_base = new PouchDB('https://arkodb-server.herokuapp.com/arko_serve
 // var pouchdb_base = new PouchDB(path.join(__dirname, 'mydb'));
 
 let db_nedb = [
-  {name:'login', db : new nedb({filename: 'login.db', autoload: true})},
-  {name:'inventario', db : new nedb({filename: 'inventario.db', autoload: true})},
-  {name:'agendamento', db : new nedb({filename: 'agendamento.db', autoload: true})},
-  {name:'base', db : new nedb({filename: 'base.db', autoload: true})},
-  {name:'coleta', db : new nedb({filename: 'coleta.db', autoload: true})},
-  {name:'usuario_enderecamento', db : new nedb({filename: 'usuario_enderecamento.db', autoload: true})},
-  {name:'enderecamento', db :  new nedb({filename: 'enderecamento.db', autoload: true})},
-  {name:'divergencia', db : new nedb({filename: 'divergencia.db', autoload: true})},
-  {name:'usuario', db : new nedb({filename: 'usuario.db', autoload: true})} 
+  {name:'login', db : new nedb({filename: 'data/login.json', autoload: true})},
+  {name:'inventario', db : new nedb({filename: 'data/inventario.json', autoload: true})},
+  {name:'agendamento', db : new nedb({filename: 'data/agendamento.json', autoload: true})},
+  {name:'base', db : new nedb({filename: 'data/base.json', autoload: true})},
+  {name:'coleta', db : new nedb({filename: 'data/coleta.json', autoload: true})},
+  {name:'usuario_enderecamento', db : new nedb({filename: 'data/usuario_enderecamento.json', autoload: true})},
+  {name:'enderecamento', db :  new nedb({filename: 'data/enderecamento.json', autoload: true})},
+  {name:'divergencia', db : new nedb({filename: 'data/divergencia.json', autoload: true})},
+  {name:'usuario', db : new nedb({filename: 'data/usuario.json', autoload: true})} 
 ]
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -430,4 +430,53 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 ipcMain.on('set-inventario', (event, arg) => {
   console.log('Inventario: '+arg) // prints "ping"
   inventario_id = arg // 'start' 'pause' 'finalizado'
+})
+ipcMain.on('insert-base', (event, arg) => {
+  let db = db_nedb[3];
+  console.log(arg.length,db_nedb[3].name) // prints "ping"
+  db.db.remove({}, {multi:true}, (err, numRemoved) => {
+    if (err) {
+      console.log('Erro 1 ao importar itens na base, cod: ' + err);
+    } else {
+      db.db.insert(arg, (err) => {
+        if(err){
+          console.log('Erro 2 ao importar itens na base, cod: ' + err); //caso ocorrer algum erro
+        } else {
+          console.log("dados carregados de " + db.name);
+        }
+      }); 
+    }
+  })
+})
+ipcMain.on('getDB', (event, table) => {
+  console.log(table) // prints "ping"
+  const thisDb = getDB(table)
+  thisDb.loadDatabase(function (err) {
+    if (err) {
+      console.log(`Erro ao carregar a base, cod: ${err}`)
+      event.returnValue = []
+    } else {
+      thisDb.find({inventario_id: 17}, (err, docs)=>{
+        console.log('main',docs)
+        event.returnValue = docs
+      })
+    }
+  });
+})
+ipcMain.on('asynchronous-message', (event, arg) => {
+  let db = db_nedb[3];
+  console.log(arg) // prints "ping"
+  event.returnValue = db.name
+})
+ipcMain.on('getBase', (event, arg) => {
+  let db = db_nedb[3]
+  db.db.find({inventario_id: 17}, (err, docs)=>{
+    event.returnValue = docs
+  })
+})
+ipcMain.on('getColeta', (event, arg) => {
+  let db = db_nedb[4]
+  db.db.find({inventario_id: 17}, (err, docs)=>{
+    event.returnValue = docs
+  })
 })

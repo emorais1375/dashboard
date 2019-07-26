@@ -1,8 +1,6 @@
 import React, { Component } from "react"
-//import mysql from 'mysql'
-import env from '../../../.env'
 import nedb from 'nedb'
-var login_bd = new nedb({filename: 'login.db', autoload: true})
+const login_bd = new nedb({filename: 'data/login.json', autoload: true})
 
 import LoginNavbar from "../../components/Navbars/LoginNavBar"
 import MaskedFormControl from 'react-bootstrap-maskedinput'
@@ -12,8 +10,6 @@ import {
   Card,
   ButtonToolbar,
   Modal,
-  Row,
-  Col
 } from 'react-bootstrap'
 
 class Login extends Component {
@@ -49,34 +45,6 @@ class Login extends Component {
           console.log('CPF:'+cpf+' ou Senha:'+password+' inválida!')
         }
       }.bind(this));
-      /*let connection = mysql.createConnection(env.config_mysql)
-      let query = `
-        SELECT usuario_id 
-        FROM login 
-        WHERE cpf=? 
-        AND password=? 
-        AND login_status='ATIVO'
-      `
-    
-      connection.query(query, [cpf, password], (error, results, fields) => {
-        if(error){
-          console.log(error.code,error.fatal)
-          this.setState({messageErro: 'Não foi possível realizar login, tente novamente mais tarde'})
-          this.handleShowMessageErro()
-          return
-        }
-        if (results.length) {
-          console.log('user_id',results[0].usuario_id)
-          localStorage.setItem('user_id',results[0].usuario_id)
-          this.props.history.push('/inventario')
-        } else {
-          console.log('CPF:'+cpf+' ou Senha:'+password+' inválida!')
-          this.setState({messageErro: 'CPF ou senha inválidos, tente novamente'})
-          this.handleShowMessageErro()
-        }
-        connection.end()
-      })
-      */
     } else {
       this.setState({messageErro: 'CPF ou senha inválidos, tente novamente'})
       this.handleShowMessageErro()
