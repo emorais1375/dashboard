@@ -33,6 +33,7 @@
   "dependencies": {
     "bootstrap": "^4.3.1",
     "express": "^4.16.4",
+    "file-saver": "^2.0.2",
     "jsstore": "^3.1.0",
     "mysql": "^2.16.0",
     "nedb": "^1.8.0",

@@ -470,13 +470,32 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 })
 ipcMain.on('getBase', (event, arg) => {
   let db = db_nedb[3]
-  db.db.find({inventario_id: 17}, (err, docs)=>{
+  db.db.find({inventario_id: inventario_id}, (err, docs)=>{
     event.returnValue = docs
+  })
+})
+ipcMain.on('updateBase', (event, rows) => {
+  let db = db_nedb[3]
+  let cout_err = 0
+
+  Promise.resolve(
+
+    rows.slice(1).forEach( element => {
+      db.db.update({
+        'cod_barra': element[0].toString(),
+        'inventario_id': Number(inventario_id)
+      }, { $set: { saldo_estoque : Number(element[1]) } }, {multi: false}, (err)=>{
+        if (err) cout_err++;
+      })
+    })
+
+  ).then(() => {
+    event.returnValue = cout_err
   })
 })
 ipcMain.on('getColeta', (event, arg) => {
   let db = db_nedb[4]
-  db.db.find({inventario_id: 17}, (err, docs)=>{
+  db.db.find({inventario_id: inventario_id, tipo_coleta: 'INVENTARIO'}, (err, docs)=>{
     event.returnValue = docs
   })
 })
