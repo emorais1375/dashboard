@@ -29,7 +29,7 @@ export default class Divergencia extends Component {
 	constructor(props){
     super(props);
     this.state = {
-      showModal: true,
+      showModal: false,
       cod_barra: '', desc: '', saldo: 0,
       checkAll: false,
       divergencia: [],
@@ -44,7 +44,7 @@ export default class Divergencia extends Component {
       inventario_id: localStorage.getItem('inv_id') || '',
       file: null,
       status: 'diverg', // [diverg,audit1,audit2]
-      txt: ''
+      txt: '', padrao: ''
     }
     this.auditar = this.auditar.bind(this)
   }
@@ -87,8 +87,19 @@ export default class Divergencia extends Component {
   getBase(){
     return new Promise((resolve, reject)=>{
       const base = ipcRenderer.sendSync('getBase', 'base')
-      this.setState({base})
-      resolve()
+      Promise.resolve(
+        base.map(b=>{
+          b['cod_barra'] = b['cod_barras']
+          b['descricao_setor_secao'] = b['departamento']
+          b['inventario_id'] = b['inventario']
+          b['saldo_estoque'] = b['saldo_qtd_estoque']
+          b['id'] = b['_id']
+          return b
+        })
+      ).then(base=>{
+        this.setState({base})
+        resolve()
+      })
     })
   }
   getColeta(){
@@ -98,139 +109,81 @@ export default class Divergencia extends Component {
       new Promise((resolve, reject)=>{
         coleta.forEach(col => {
           if (!results.find( elem => {
-            if(elem.cod_barra === col.cod_barra && elem.enderecamento === col.enderecamento){
+            if(elem.cod_barra === col.cod_barra && elem.enderecamento === col.enderecamento && 
+              elem.validade === col.validade && elem.lote === col.lote){
               elem.qtd_inventario += col.itens_embalagem
               return true;
             }
             return false;
           })){
-            results.push({'cod_barra' : col.cod_barra, 'enderecamento': col.enderecamento,'qtd_inventario':col.itens_embalagem});
+            results.push({
+              'cod_barra' : col.cod_barra, 
+              'enderecamento': col.enderecamento,
+              'qtd_inventario':col.itens_embalagem,
+              'validade': col.validade,
+              'lote': col.lote,
+              'fabricacao': col.fabricacao
+            });
           }
         })
         resolve()
       }).then(()=>{
         this.setState({coleta: results})
+        console.log('coleta:',coleta)
       })
       resolve()
     })
   }
   createDivergencia(){
     const { base, coleta } = this.state
+    console.log('coleta:',coleta)
+    console.log('base:',base)
     let divergencia2 = []
-    // Promise.resolve(
-      // base.map(b =>{
-      //   let element = coleta.filter(c => c.cod_barra === b.cod_barra) // todos da c na base
-        // let element_fora = coleta.filter(c => c.cod_barra !== b.cod_barra) // todos da c nao base
-        // if (element_fora.length) {
-        //   let qtd_inventario_total = 0
-        //   element_fora.map(element => {
-        //     let div ={
-        //       id: element['cod_barra'] + element['enderecamento'],
-        //       cod_barra: element['cod_barra'],
-        //       cod_interno: '',
-        //       descricao_item: '',
-        //       descricao_setor_secao: '',
-        //       familia: '',
-        //       grupo: '',
-        //       base_id: null,
-        //       inventario_id: element['inventario_id'],
-        //       referencia: '',
-        //       saldo_estoque: '',
-        //       setor_secao: '',
-        //       subfamilia: '',
-        //       valor_custo: 0,
-        //       valor_venda: 0,
-        //       enderecamento: element['enderecamento'],
-        //       qtd_inventario: element['qtd_inventario'],
-        //       audit1: 0,
-        //       audit1_selected: false,
-        //       audit2: 0,
-        //       audit2_selected: false
-        //     }
-        //     qtd_inventario_total += element['qtd_inventario']
-        //     return div
-        //   }).map(element => {
-        //     element['qtd_divergencia'] = qtd_inventario_total - element['saldo_estoque']
-        //     element['valor_divergente'] = Number(((qtd_inventario_total - element['saldo_estoque'])*element['valor_custo']).toFixed(2))
-        //     if(element.qtd_divergencia !== 0) divergencia2.push(element)
-        //   })
-        // }
-        // if (element.length) {
-      //     let qtd_inventario_total = 0
-      //     element.map(element => {
-      //       let div ={
-      //         id: element['cod_barra'] + element['enderecamento'],
-      //         cod_barra: b['cod_barra'],
-      //         cod_interno: b['cod_interno'],
-      //         descricao_item: b['descricao_item'],
-      //         descricao_setor_secao: b['descricao_setor_secao'],
-      //         familia: b['familia'],
-      //         grupo: b['grupo'],
-      //         base_id: b['id'],
-      //         inventario_id: b['inventario_id'],
-      //         referencia: b['referencia'],
-      //         saldo_estoque: b['saldo_estoque'],
-      //         setor_secao: b['setor_secao'],
-      //         subfamilia: b['subfamilia'],
-      //         valor_custo: b['valor_custo'],
-      //         valor_venda: b['valor_venda'],
-      //         enderecamento: element['enderecamento'],
-      //         qtd_inventario: element['qtd_inventario'],
-      //         audit1: 0,
-      //         audit1_selected: false,
-      //         audit2: 0,
-      //         audit2_selected: false
-      //       }
-      //       qtd_inventario_total += element['qtd_inventario']
-      //       return div
-      //     }).map(element => {
-      //       element['qtd_divergencia'] = qtd_inventario_total - element['saldo_estoque']
-      //       element['valor_divergente'] = Number(((qtd_inventario_total - element['saldo_estoque'])*element['valor_custo']).toFixed(2))
-      //       if(element.qtd_divergencia !== 0) divergencia2.push(element)
-      //     })
-      //   }
-      // })
-      // this.setState({divergencia2})
-
-    base.map(b =>{
-      let element = coleta.filter(c => b.cod_barra === c.cod_barra)
-      if (element.length) {
-        let qtd_inventario_total = 0
-        element.map(element => {
-          let div ={
-            id: element['cod_barra'] + element['enderecamento'],
-            cod_barra: b['cod_barra'],
-            cod_interno: b['cod_interno'],
-            descricao_item: b['descricao_item'],
-            descricao_setor_secao: b['descricao_setor_secao'],
-            familia: b['familia'],
-            grupo: b['grupo'],
-            base_id: b['id'],
-            inventario_id: b['inventario_id'],
-            referencia: b['referencia'],
-            saldo_estoque: b['saldo_estoque'],
-            setor_secao: b['setor_secao'],
-            subfamilia: b['subfamilia'],
-            valor_custo: b['valor_custo'],
-            valor_venda: b['valor_venda'],
-            enderecamento: element['enderecamento'],
-            qtd_inventario: element['qtd_inventario'],
-            audit1: 0,
-            audit1_selected: false,
-            audit2: 0,
-            audit2_selected: false
-          }
-          qtd_inventario_total += element['qtd_inventario']
-          return div
-        }).map(element => {
-          element['qtd_divergencia'] = qtd_inventario_total - element['saldo_estoque']
-          element['valor_divergente'] = Number(((qtd_inventario_total - element['saldo_estoque'])*element['valor_custo']).toFixed(2))
-          if(element.qtd_divergencia !== 0) divergencia2.push(element)
-        })
-      }
+    Promise.resolve(
+      base.map(b =>{
+        let element = coleta.filter(c => b.cod_barra === c.cod_barra)
+        if (element.length) {
+          let qtd_inventario_total = 0
+          element.map(element => {
+            let div ={
+              id: element['cod_barra'] + element['enderecamento'] + element['validade'] + element['lote'],
+              cod_barra: b['cod_barra'],
+              cod_interno: b['cod_interno'],
+              descricao_item: b['descricao_item'],
+              descricao_setor_secao: b['descricao_setor_secao'],
+              familia: b['familia'],
+              grupo: b['grupo'],
+              base_id: b['id'],
+              inventario_id: b['inventario_id'],
+              referencia: b['referencia'],
+              saldo_estoque: b['saldo_estoque'],
+              setor_secao: b['setor_secao'],
+              subfamilia: b['subfamilia'],
+              valor_custo: b['valor_custo'],
+              valor_venda: b['valor_venda'],
+              enderecamento: element['enderecamento'],
+              qtd_inventario: element['qtd_inventario'],
+              audit1: 0,
+              audit1_selected: false,
+              audit2: 0,
+              audit2_selected: false,
+              validade: element['validade'],
+              lote: element['lote'],
+              fabricacao: element['fabricacao']
+            }
+            qtd_inventario_total += element['qtd_inventario']
+            return div
+          }).map(element => {
+            element['qtd_divergencia'] = qtd_inventario_total - element['saldo_estoque']
+            element['valor_divergente'] = Number(((qtd_inventario_total - element['saldo_estoque'])*element['valor_custo']).toFixed(2))
+            if(element.qtd_divergencia !== 0) divergencia2.push(element)
+          })
+        }
+      })
+    ).then(()=>{
+      console.log(divergencia2)
+      this.setState({divergencia2})
     })
-
-    this.setState({divergencia2})
   }
   auditar() {
     const {status, selected, divergencia2, auditar1} = this.state
@@ -261,7 +214,11 @@ export default class Divergencia extends Component {
     this.setState({ showModal: true })
   }
   voltar() {
-    this.setState({status: 'diverg'})
+    if(this.state.status === 'audit1'){
+      this.setState({status: 'diverg', selected: []})
+    } else if(this.state.status === 'audit2'){
+      this.setState({status: 'audit1'})
+    }
   }
   onRowSelect({ id, qtd_divergencia, enderecamento }, isSelected) {
     if (isSelected && (qtd_divergencia === 0 || enderecamento === 'desconhecido')) {
@@ -299,7 +256,7 @@ export default class Divergencia extends Component {
     return false
   }
   handleClose() {
-    this.setState({ showModal: false });
+    this.setState({ showModal: false, txt: '', padrao: ''});
   }
   exportarTXT() {
     const {txt} = this.state
@@ -307,12 +264,35 @@ export default class Divergencia extends Component {
     FileSaver.saveAs(blob, "base.txt");
   }
   handClearTXT() {
-    this.setState({txt: ''})
+    this.setState({txt: '', padrao: ''})
   }
   hendlChangeTXT(e) {
-    const {txt, divergencia2} = this.state
+    const {divergencia2, auditar1, auditar2, padrao} = this.state
     const value = e.target.value
-    this.setState({txt: txt+value})
+    let msg = padrao + value + '\n'
+    const p = padrao + value
+    divergencia2.map(d=>{
+      const a1 = auditar1.find(a1=>a1.id === d.id)
+      const a2 = auditar2.find(a2=>a2.id === d.id)
+      if(a2){
+        d['qtd_inventario'] = a2['qtd_inventario']
+        d['qtd_divergencia'] = a2['qtd_divergencia']
+        d['valor_divergente'] = a2['valor_divergente']
+      } else if(a1){
+        d['qtd_inventario'] = a1['qtd_inventario']
+        d['qtd_divergencia'] = a1['qtd_divergencia']
+        d['valor_divergente'] = a1['valor_divergente']
+      }
+      return d
+    }).map(d=>{
+      msg += eval('`'+p+'`')
+    })
+    const msg_nova = [...new Set(msg.split('\n'))]
+    let msg_nova1 = ''
+    msg_nova.forEach(m=>{
+      msg_nova1 += m + '\n'
+    })
+    this.setState({txt: msg_nova1, padrao: p})
   }
   render() {
     const { txt, status, auditar1, auditar2, divergencia2 } = this.state
@@ -408,8 +388,10 @@ export default class Divergencia extends Component {
               options={ options }>
               <TableHeaderColumn dataField='id' isKey hidden>ID</TableHeaderColumn>
               <TableHeaderColumn dataField='cod_barra' editable={ true } width='140' dataSort>EAN  ({divergencia2.length})</TableHeaderColumn>
-              <TableHeaderColumn dataField='enderecamento' editable={ false } tdStyle={{whiteSpace: 'normal'}} dataSort>Enderecamento</TableHeaderColumn>
+              <TableHeaderColumn dataField='enderecamento' editable={ false } width='130' tdStyle={{whiteSpace: 'normal'}} dataSort>Enderecamento</TableHeaderColumn>
               <TableHeaderColumn dataField='descricao_item' editable={ false } tdStyle={{whiteSpace: 'normal'}} dataSort>Descrição</TableHeaderColumn>
+              <TableHeaderColumn dataField='validade' editable={ false } width='80' dataSort>Validade</TableHeaderColumn>
+              <TableHeaderColumn dataField='lote' editable={ false } width='80' dataSort>Lote</TableHeaderColumn>
               <TableHeaderColumn dataField='qtd_inventario' editable={ false } width='80' dataSort>Coleta</TableHeaderColumn>
               <TableHeaderColumn dataField='saldo_estoque' editable={ false } width='80' dataSort>Saldo</TableHeaderColumn>
               <TableHeaderColumn dataField='qtd_divergencia' editable={ false } width='90' dataSort>Quantidade</TableHeaderColumn>
@@ -459,6 +441,8 @@ export default class Divergencia extends Component {
               <TableHeaderColumn dataField='cod_barra' editable={ false } width='140' dataSort>EAN ({auditar1.length})</TableHeaderColumn>
               <TableHeaderColumn dataField='enderecamento' editable={ false } tdStyle={{whiteSpace: 'normal'}} dataSort>Enderecamento</TableHeaderColumn>
               <TableHeaderColumn dataField='descricao_item' editable={ false } tdStyle={{whiteSpace: 'normal'}} dataSort>Descrição</TableHeaderColumn>
+              <TableHeaderColumn dataField='validade' editable={ false } width='80' dataSort>Validade</TableHeaderColumn>
+              <TableHeaderColumn dataField='lote' editable={ false } width='80' dataSort>Lote</TableHeaderColumn>
               <TableHeaderColumn dataField='qtd_inventario' editable={ false } width='80' dataSort editable={ { validator: jobStatusValidator } }>Coleta</TableHeaderColumn>
               <TableHeaderColumn dataField='saldo_estoque' editable={ false }  width='80' dataSort>Saldo</TableHeaderColumn>
               <TableHeaderColumn dataField='qtd_divergencia' editable={ false } width='90' dataSort>Quantidade</TableHeaderColumn>
@@ -506,6 +490,8 @@ export default class Divergencia extends Component {
               <TableHeaderColumn dataField='cod_barra' editable={ false } width='140' dataSort>EAN  ({auditar1.length})</TableHeaderColumn>
               <TableHeaderColumn dataField='enderecamento' editable={ false } tdStyle={{whiteSpace: 'normal'}} dataSort>Enderecamento</TableHeaderColumn>
               <TableHeaderColumn dataField='descricao_item' editable={ false } tdStyle={{whiteSpace: 'normal'}} dataSort>Descrição</TableHeaderColumn>
+              <TableHeaderColumn dataField='validade' editable={ false } width='80' dataSort>Validade</TableHeaderColumn>
+              <TableHeaderColumn dataField='lote' editable={ false } width='80' dataSort>Lote</TableHeaderColumn>
               <TableHeaderColumn dataField='qtd_inventario' width='80' dataSort editable={ { validator: jobStatusValidator } }>Coleta</TableHeaderColumn>
               <TableHeaderColumn dataField='saldo_estoque' editable={ false } width='80' dataSort>Saldo</TableHeaderColumn>
               <TableHeaderColumn dataField='qtd_divergencia' editable={ false } width='90' dataSort>Quantidade</TableHeaderColumn>
@@ -527,30 +513,30 @@ export default class Divergencia extends Component {
             <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value=';'>;</Button>
             <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='"'>"</Button>
             <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value=' '>ESPAÇO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='DEPARTAMENTO'>DEPARTAMENTO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='SETOR'>SETOR</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='GRUPO'>GRUPO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='FAMILIA'>FAMILIA</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='SUBFAMILIA'>SUBFAMILIA</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='EAN'>EAN</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='REFERENCIA'>REFERENCIA</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='COD_INTERNO'>COD_INTERNO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='DESCRICAO'>DESCRICAO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='SALDO'>SALDO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='QUANT_INVENT'>QUANT_INVENT</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='QUANT_DIVERG'>QUANT_DIVERG</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='CUSTO'>CUSTO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='VENDA'>VENDA</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='CUSTO_SALDO'>CUSTO CUSTO_SALDO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='VENDA_SALDO'>VENDA_SALDO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='CUSTO_INVENT'>CUSTO_INVENT</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='VENDA_INVENT'>VENDA_INVENT</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='CUSTO_DIVERG'>CUSTO_DIVERG</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='VENDA_DIVERG'>VENDA_DIVERG</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} disabled value='LOTE'>LOTE</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} disabled value='FABRICAÇÃO'>FABRICAÇÃO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} disabled value='VALIDADE'>VALIDADE</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} disabled value='QUANTIDADE'>QUANTIDADE</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='\n'>ENTER</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.descricao_setor_secao}'>DEPARTAMENTO</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.setor_secao}'>SETOR</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.grupo}'>GRUPO</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.familia}'>FAMILIA</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.subfamilia}'>SUBFAMILIA</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.cod_barra}'>EAN</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.referencia}'>REFERENCIA</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.cod_interno}'>COD_INTERNO</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.descricao_item}'>DESCRICAO</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.saldo_estoque}'>SALDO</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.qtd_inventario}'>QUANT_INVENT</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.qtd_divergencia}'>QUANT_DIVERG</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_custo}'>CUSTO</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_venda}'>VENDA</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_custo*d.saldo_estoque}'>CUSTO_SALDO</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_venda*d.saldo_estoque}'>VENDA_SALDO</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_custo*d.qtd_inventario}'>CUSTO_INVENT</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_venda*d.qtd_inventario}'>VENDA_INVENT</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_divergente}'>CUSTO_DIVERG</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_venda*d.qtd_divergencia}'>VENDA_DIVERG</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.lote}'>LOTE</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.fabricacao}'>FABRICAÇÃO</Button>
+            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.validade}'>VALIDADE</Button>
           </ButtonToolbar>
           <FormControl as="textarea" aria-label="With textarea" value={txt} readOnly/>
         </Modal.Body>

@@ -106,8 +106,9 @@ stopClock(){
     horas: 0, minutos: 0, segundos: 0, "isEnable": false,
     timeFormat: '00:00:00',
   });
-  this.inserirDivergencia()
+  // this.inserirDivergencia()
   // this.props.history.push('/admin/divergencia')
+  this.props.history.push('/admin/codigo')
 }
 pauseClock(){
   const {tipo_coleta} = this.state
@@ -133,17 +134,20 @@ componentWillUnmount() {
 lerBase(){
   let {inventario_id} = this.state;
   console.log(inventario_id)
-  if (inventario_id) {
-    base_db.find({inventario_id: parseInt(inventario_id)}, {_id:0,id:1, cod_barra:1,descricao_item:1,saldo_estoque:1}).sort({ saldo_estoque: -1 }).exec(function(err, base){
-      if (err) {
-        alert(`Erro ao ler a base, cod:. ${err}`)
-      } else {
-        this.setState({ base })
-      }
-    }.bind(this));
-  } else {
-    console.log('Vazio!')
-  }
+  const base = ipcRenderer.sendSync('getBase', 'base')
+  this.setState({base})
+  console.log(base)
+  // if (inventario_id) {
+  //   base_db.find({inventario_id: parseInt(inventario_id)}, {_id:0, cod_barra:1,descricao_item:1,saldo_estoque:1}).sort({ saldo_estoque: -1 }).exec(function(err, base){
+  //     if (err) {
+  //       alert(`Erro ao ler a base, cod:. ${err}`)
+  //     } else {
+  //       this.setState({ base })
+  //     }
+  //   }.bind(this));
+  // } else {
+  //   console.log('Vazio!')
+  // }
 }
 lerColeta(){
   let {inventario_id, tipo_coleta} = this.state;
@@ -170,38 +174,39 @@ lerColeta(){
 lerEnd() {
   let {inventario_id, tipo_coleta} = this.state;
   if (inventario_id) {
-    // usuario_enderecamento.find({inventario_id:parseInt(inventario_id), tipo:tipo_coleta}, function(err, rows){
-    //   var results = [];
-    //   new Promise(function(resolve, reject){
-    //     rows.forEach(element => {
-    //       enderecamento.findOne({id: element.enderecamento_id}, function(err, end){
-    //         results.push({'id':element.id, 'descricao': end.descricao, 'status': element.status})
-    //         resolve(results);
-    //       })
-    //     });
-    //   }).then(()=> {
-    //     results.sort(function(a,b){
-    //       return b.id - a.id;
-    //     });
-    //     this.setState({enderecamento:results})
-    //   });
-    // }.bind(this))
+    usuario_enderecamento.find({inventario_id:parseInt(inventario_id)}, function(err, rows){
+      // console.log(rows)
+      var results = [];
+      new Promise(function(resolve, reject){
+        rows.forEach(element => {
+          enderecamento.findOne({id: element.enderecamento_id}, function(err, end){
+            results.push({'id':element.id, 'descricao': end.descricao, 'status': element.status})
+            resolve(results);
+          })
+        });
+      }).then(()=> {
+        results.sort(function(a,b){
+          return b.id - a.id;
+        });
+        this.setState({enderecamento:results})
+      });
+    }.bind(this))
     
-    let connection = mysql.createConnection(env.config_mysql);
-    let query = `
-      select e.id, descricao, status
-      from usuario_enderecamento ue, enderecamento e 
-      where ue.inventario_id=? and tipo=? 
-      and enderecamento_id = e.id
-    `
-    connection.query(query, [inventario_id, tipo_coleta],(error, enderecamento, fields) => {
-      if(error){
-          console.log(error.code,error.fatal)
-          return
-      }
-      this.setState({ enderecamento })
-      connection.end();
-    })
+    // let connection = mysql.createConnection(env.config_mysql);
+    // let query = `
+    //   select e.id, descricao, status
+    //   from usuario_enderecamento ue, enderecamento e 
+    //   where ue.inventario_id=? and tipo=? 
+    //   and enderecamento_id = e.id
+    // `
+    // connection.query(query, [inventario_id, tipo_coleta],(error, enderecamento, fields) => {
+    //   if(error){
+    //       console.log(error.code,error.fatal)
+    //       return
+    //   }
+    //   this.setState({ enderecamento })
+    //   connection.end();
+    // })
     
   } else {
     console.log('Vazio!')
@@ -214,57 +219,57 @@ lerEquipe() {
     // usuario.find({id:parseInt(element.usuario_id)}, function(err, user){
     //   usernames[user.id] = user.nome;
     // });
-    // usuario_enderecamento.find({inventario_id: parseInt(inventario_id)}, function(err, rows){
-    //   console.log(rows);
-    //   var users = []
-    //   rows.forEach(element => {
-    //     if(!users.find(function(user, i, array){
-    //       if(user.usuario_id == element.usuario_id){
-    //         if(element.tipo == 'INVENTARIO'){
-    //           user.qtd_enderecamento += 1;
-    //           if(element.status == 'CONCLUIDO'){
-    //             user.qtd_concluido += 1;
-    //           }
-    //           user.progress = (user.qtd_concluido / user.qtd_enderecamento)*100;
-    //         }
-    //         return true;
-    //       }else {
-    //         return false;
-    //       }
-    //     })){
-    //       new Promise(function(resolve, reject){
+    usuario_enderecamento.find({inventario_id: parseInt(inventario_id)}, function(err, rows){
+      console.log('ue: ',rows);
+      var users = []
+      rows.forEach(element => {
+        if(!users.find(function(user, i, array){
+          if(user.usuario_id == element.usuario_id){
+            if(element.tipo == 'INVENTARIO'){
+              user.qtd_enderecamento += 1;
+              if(element.status == 'CONCLUIDO'){
+                user.qtd_concluido += 1;
+              }
+              user.progress = (user.qtd_concluido / user.qtd_enderecamento)*100;
+            }
+            return true;
+          }else {
+            return false;
+          }
+        })){
+          new Promise(function(resolve, reject){
             
-    //       }).then((result)=>{
-    //         users.push({'nome': result, 'usuario_id': element.usuario_id, 'qtd_enderecamento':1, 'qtd_concluido': 1, 'progress':0})
+          }).then((result)=>{
+            users.push({'nome': result, 'usuario_id': element.usuario_id, 'qtd_enderecamento':1, 'qtd_concluido': 1, 'progress':0})
       
-    //       })
-    //      }
-    //   });
-    //   console.log(users);
-    // })
-    
-    let connection = mysql.createConnection(env.config_mysql);
-    let query = `
-      select usuario_id, nome, COUNT(enderecamento_id) qtd_enderecamento,
-      SUM(CASE WHEN status='CONCLUIDO' THEN 1 ELSE 0 END) qtd_concluido,
-      TRUNCATE(SUM(CASE WHEN status='CONCLUIDO' THEN 1 ELSE 0 END)/COUNT(enderecamento_id)*100,0) progress
-      from usuario_enderecamento ue, usuario u  
-      where inventario_id=? AND tipo='INVENTARIO' AND usuario_id = u.id
-      GROUP BY usuario_id
-    `
-    connection.query(query, [inventario_id],(error, equipe, fields) => {
-      if(error){
-          console.log(error.code,error.fatal)
-          return
-      }
-      let progressTotal = 0
-      equipe.map(e => {
-        progressTotal = progressTotal + e.progress
-      })
-      progressTotal = (progressTotal/equipe.length).toFixed(1)
-      this.setState({ equipe, progressTotal })
-      connection.end();
+          })
+         }
+      });
+      console.log(users);
     })
+    
+    // let connection = mysql.createConnection(env.config_mysql);
+    // let query = `
+    //   select usuario_id, nome, COUNT(enderecamento_id) qtd_enderecamento,
+    //   SUM(CASE WHEN status='CONCLUIDO' THEN 1 ELSE 0 END) qtd_concluido,
+    //   TRUNCATE(SUM(CASE WHEN status='CONCLUIDO' THEN 1 ELSE 0 END)/COUNT(enderecamento_id)*100,0) progress
+    //   from usuario_enderecamento ue, usuario u  
+    //   where inventario_id=? AND tipo='INVENTARIO' AND usuario_id = u.id
+    //   GROUP BY usuario_id
+    // `
+    // connection.query(query, [inventario_id],(error, equipe, fields) => {
+    //   if(error){
+    //       console.log(error.code,error.fatal)
+    //       return
+    //   }
+    //   let progressTotal = 0
+    //   equipe.map(e => {
+    //     progressTotal = progressTotal + e.progress
+    //   })
+    //   progressTotal = (progressTotal/equipe.length).toFixed(1)
+    //   this.setState({ equipe, progressTotal })
+    //   connection.end();
+    // })
     
   } else {
     console.log('Vazio!')
@@ -516,10 +521,10 @@ render() {
               
              data={base} height='250' scrollTop={ 'Bottom' } 
               search options={ options }>
-              <TableHeaderColumn dataField='id' isKey hidden>ID</TableHeaderColumn>
-              <TableHeaderColumn dataField='cod_barra' width='140' >EAN BASE ({base.length})</TableHeaderColumn>
+              <TableHeaderColumn dataField='_id' isKey hidden>ID</TableHeaderColumn>
+              <TableHeaderColumn dataField='cod_barras' width='140' >EAN BASE ({base.length})</TableHeaderColumn>
               <TableHeaderColumn dataField='descricao_item' tdStyle={{whiteSpace: 'normal'}}>DESCRIÇÃO</TableHeaderColumn>
-              <TableHeaderColumn dataField='saldo_estoque' width='70'>SALDO</TableHeaderColumn>
+              <TableHeaderColumn dataField='saldo_qtd_estoque' width='70'>SALDO</TableHeaderColumn>
             </BootstrapTable>
           </Col>
         </Row>

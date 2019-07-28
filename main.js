@@ -107,7 +107,7 @@ function startExpress () {
         cpf.splice( 7, 0, '.')
         cpf.splice(11, 0, '-')
         cpf = cpf.join('')
-        const login_bd = new nedb({filename: 'login.db', autoload: true})
+        const login_bd = db_nedb[0].db
         login_bd.findOne({
           cpf:cpf, 
           password:password, 
@@ -143,7 +143,7 @@ function startExpress () {
 
   server.get('/inventario', (req, res) => {
     console.log('GET /inventario')
-    const inventario_bd = new nedb({filename: 'inventario.db', autoload: true})
+    const inventario_bd = db_nedb[1].db
     inventario_bd.findOne({id: inventario_id}, (err, invent) => {
       if(err) {
         console.log(err)
@@ -153,6 +153,7 @@ function startExpress () {
         res.json({
           "retorno": 0, 
           "controle": controle,
+          "inventario_id": invent.id,
           "tipo_inventario": invent.tipo_inventario,
           "validade": invent.validade,
           "fabricacao": invent.fabricacao,
@@ -185,8 +186,8 @@ function startExpress () {
     const { usuario_id } = req.query
     console.log('GET /enderecamento?usuario_id='+usuario_id)
 
-    const e_db = new nedb({filename: 'enderecamento.db', autoload: true})
-    const ue_db = new nedb({filename: 'usuario_enderecamento.db', autoload: true})
+    const e_db = db_nedb[6].db
+    const ue_db = db_nedb[5].db
     if (usuario_id) {
       ue_db.find({inventario_id: inventario_id, usuario_id: Number(usuario_id), status: { $ne: 'CONCLUIDO' }},(err, ue) => {
         if(err) {
@@ -221,7 +222,7 @@ function startExpress () {
     if (controle === 'play') {
       const coletas  = req.body || []
       console.log(typeof(coletas), coletas)
-      let coleta_db = new nedb({filename: 'coleta.db', autoload: true})
+      let coleta_db = db_nedb[4].db
       coleta_db.insert(coletas, err => {
         if (err) {
           res.json({retorno: -1, controle, error:err})
@@ -237,16 +238,17 @@ function startExpress () {
 
   server.get('/base', (req, res) => {
     console.log('GET /base')
-    let base_db = new nedb({filename: 'base.db', autoload: true})
+    let base_db = db_nedb[3].db
     base_db.find({
-      inventario_id: inventario_id
+      inventario: inventario_id
     },(err, docs)=>{
+      console.log('base: ',docs)
       if(err) {
         console.log(err);
         res.json({retorno: -1, controle, error:err});
       } else {
         let base = docs.map(item => ({
-          cod_barra: item.item,
+          cod_barra: item.cod_barras,
           descricao_item: item.descricao_item
         }))
         res.json(base);
@@ -278,7 +280,7 @@ function startExpress () {
     if (controle === 'play') {
       const coletas  = req.body || []
       let cout_err = 0
-      let ue_db = new nedb({filename: 'usuario_enderecamento.db', autoload: true});
+      let ue_db = db_nedb[5].db
       Promise.resolve(
         coletas.map(element => {
           ue_db.update( { 
@@ -309,7 +311,7 @@ function startExpress () {
     if (controle === 'play') {
       const coletas  = req.body || []
       let cout_err = 0
-      let coleta_db = new nedb({filename: 'coleta.db', autoload: true})
+      let coleta_db = db_nedb[4].db
       Promise.resolve(
         coletas.map(element => {
           coleta_db.remove( { 
@@ -431,6 +433,11 @@ ipcMain.on('set-inventario', (event, arg) => {
   console.log('Inventario: '+arg) // prints "ping"
   inventario_id = arg // 'start' 'pause' 'finalizado'
 })
+ipcMain.on('loadDB', (event, arg) => {
+  console.log('loadDB: '+arg) // prints "ping"
+  inventario_id = arg // 'start' 'pause' 'finalizado'
+  loadDB()
+})
 ipcMain.on('insert-base', (event, arg) => {
   let db = db_nedb[3];
   console.log(arg.length,db_nedb[3].name) // prints "ping"
@@ -470,7 +477,7 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 })
 ipcMain.on('getBase', (event, arg) => {
   let db = db_nedb[3]
-  db.db.find({inventario_id: inventario_id}, (err, docs)=>{
+  db.db.find({inventario: inventario_id}, (err, docs)=>{
     event.returnValue = docs
   })
 })

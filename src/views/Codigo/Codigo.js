@@ -44,20 +44,20 @@ export default class Codigo extends Component {
       readXlsxFile(file.path).then((rows) => {
         let base = rows.slice(1).map( element =>
           ({
-                'cod_barra': element[0],
+                'cod_barras': element[0],
                 'cod_interno': element[1],
                 'departamento': element[2],
                 'setor_secao': element[3],
-                'descricao_setor_secao': element[4],
+                'departamento': element[4],
                 'grupo': element[5],
                 'familia': element[6],
                 'subfamilia': element[7],
                 'referencia': element[8],
-                'saldo_estoque': element[9],
+                'saldo_qtd_estoque': element[9],
                 'valor_custo': element[10],
                 'valor_venda': element[11],
                 'descricao_item': element[12],
-                'inventario_id': Number(inventario_id)
+                'inventario': Number(inventario_id)
               })
         )
         this.setState({base})
@@ -136,9 +136,9 @@ export default class Codigo extends Component {
           <Col md={6} style={{ 'marginBottom': '30px' }}>
             <BootstrapTable data={base} height='250' scrollTop={ 'Bottom' } 
               search options={ options }>
-              <TableHeaderColumn dataField='cod_barra' width='140' isKey >EAN BASE ({base.length})</TableHeaderColumn>
+              <TableHeaderColumn dataField='cod_barras' width='140' isKey >EAN BASE ({base.length})</TableHeaderColumn>
               <TableHeaderColumn dataField='descricao_item' tdStyle={{whiteSpace: 'normal'}}>DESCRIÇÃO</TableHeaderColumn>
-              <TableHeaderColumn dataField='saldo_estoque' width='70'>SALDO</TableHeaderColumn>
+              <TableHeaderColumn dataField='saldo_qtd_estoque' width='70'>SALDO</TableHeaderColumn>
             </BootstrapTable>
           </Col>
         </Row>
