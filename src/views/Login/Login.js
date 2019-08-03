@@ -11,13 +11,18 @@ import {
   ButtonToolbar,
   Modal,
 } from 'react-bootstrap'
+import { ipcRenderer } from "electron";
 
 class Login extends Component {
   constructor(props) {
     super(props)
     this.state = {
-    
-      cpf:'009.441.122-00', password:'1234', usuario:[], showMessageErro:false, messageErro:''
+      cpf:'969.342.390-91',
+      password:'1234',
+      usuario:[],
+      showMessageErro:false,
+      messageErro:'',
+      isLoading:false
     }
     this.changePage = false;
     this.handleChange = this.handleChange.bind(this)
@@ -58,9 +63,14 @@ class Login extends Component {
   handleShowMessageErro(){
     this.setState({showMessageErro: true})
   }
+  handleReloadDate(){
+    console.log('handleReloadDate')
+    // this.setState({isLoading: true})
+    ipcRenderer.send('loadDB')
+  }
 
   render() {
-        const { validated, cpf, password, showMessageErro, messageErro } = this.state;
+        const { isLoading,validated, cpf, password, showMessageErro, messageErro } = this.state;
         return (
         <div>
             <LoginNavbar />
@@ -97,6 +107,12 @@ class Login extends Component {
                 </Card>
                 </div>
                 <br />
+                <Button 
+                  disabled={isLoading}
+                  onClick={!isLoading?this.handleReloadDate.bind(this):null}
+                >
+                  {isLoading?'Carregando...':'Recarregar'}
+                </Button>
                 <Modal
                   size="sm"
                   show={showMessageErro}

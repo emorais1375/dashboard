@@ -150,32 +150,52 @@ lerBase(){
   // }
 }
 lerColeta(){
-  let {inventario_id, tipo_coleta} = this.state;
-  if (inventario_id) {
-    coleta_db.find({inventario_id: parseInt(inventario_id), tipo_coleta: tipo_coleta},{cod_barra:1, enderecamento:1, itens_embalagem:1, _id:0}, function(err, coletas){
-      var results = []
-      coletas.forEach(col => {
-        if(!results.find( elem => {
+    const coleta = ipcRenderer.sendSync('getColeta', 'coleta')
+    let results = []
+    new Promise((resolve, reject)=>{
+      coleta.forEach(col => {
+        if (!results.find( elem => {
           if(elem.cod_barra === col.cod_barra && elem.enderecamento === col.enderecamento){
-            elem.qtd += col.itens_embalagem
+            elem.qtd_inventario += col.itens_embalagem
             return true;
           }
           return false;
         })){
-          results.push({'cod_barra' : col.cod_barra, 'enderecamento': col.enderecamento,'qtd':col.itens_embalagem, 'id': col.cod_barra+col.enderecamento})
+          results.push({
+            'cod_barra' : col.cod_barra, 
+            'enderecamento': col.enderecamento,
+            'qtd':col.itens_embalagem,
+            'id': col.cod_barra+col.enderecamento
+          });
         }
-      });
-      this.setState({coleta: results })
-    }.bind(this))
-  } else {
-    console.log('Vazio!')
-  }
+      })
+      resolve()
+    }).then(()=>{
+      this.setState({coleta: results})
+    })
+
+
+    // coleta_db.find({inventario_id: parseInt(inventario_id), tipo_coleta: tipo_coleta},{cod_barra:1, enderecamento:1, itens_embalagem:1, _id:0}, function(err, coletas){
+    //   var results = []
+    //   coletas.forEach(col => {
+    //     if(!results.find( elem => {
+    //       if(elem.cod_barra === col.cod_barra && elem.enderecamento === col.enderecamento){
+    //         elem.qtd += col.itens_embalagem
+    //         return true;
+    //       }
+    //       return false;
+    //     })){
+    //       results.push({'cod_barra' : col.cod_barra, 'enderecamento': col.enderecamento,'qtd':col.itens_embalagem, 'id': col.cod_barra+col.enderecamento})
+    //     }
+    //   });
+    //   this.setState({coleta: results })
+    // }.bind(this))
+  // }
 }
 lerEnd() {
   let {inventario_id, tipo_coleta} = this.state;
   if (inventario_id) {
     usuario_enderecamento.find({inventario_id:parseInt(inventario_id)}, function(err, rows){
-      // console.log(rows)
       var results = [];
       new Promise(function(resolve, reject){
         rows.forEach(element => {

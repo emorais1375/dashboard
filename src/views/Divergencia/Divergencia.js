@@ -13,6 +13,8 @@ import {
   Modal,
   ButtonToolbar,
   FormControl,
+  InputGroup,
+  ButtonGroup
 } from "react-bootstrap"
 import FileSaver from 'file-saver'
 
@@ -29,7 +31,7 @@ export default class Divergencia extends Component {
 	constructor(props){
     super(props);
     this.state = {
-      showModal: false,
+      showModal: true,
       cod_barra: '', desc: '', saldo: 0,
       checkAll: false,
       divergencia: [],
@@ -294,8 +296,124 @@ export default class Divergencia extends Component {
     })
     this.setState({txt: msg_nova1, padrao: p})
   }
+  hendleChangePadrao(e){
+    const target = e.target
+    const value = target.value
+    const name = target.name
+    const type = target.type
+    if (type === 'text') {
+      this.setState({[name]: value})
+    } else if (type === 'button'){
+      let padrao = this.state.padrao + value
+      this.setState({padrao})
+    }
+  }
+  hendleClickModelo(e){
+    const target = e.target
+    const value = target.value
+    const name = target.name
+    const type = target.type
+    let msg = ''
+    const diverg = this.state.divergencia2.map(d=>{
+      const a1 = this.state.auditar1.find(a1=>a1.id === d.id)
+      const a2 = this.state.auditar2.find(a2=>a2.id === d.id)
+      if(a2){
+        d['qtd_inventario'] = a2['qtd_inventario']
+        d['qtd_divergencia'] = a2['qtd_divergencia']
+        d['valor_divergente'] = a2['valor_divergente']
+      } else if(a1){
+        d['qtd_inventario'] = a1['qtd_inventario']
+        d['qtd_divergencia'] = a1['qtd_divergencia']
+        d['valor_divergente'] = a1['valor_divergente']
+      }
+      return d
+    })
+    let msg_nova = []
+    let msg_nova1 = ''
+    switch (name) {
+      case 'ModWinthor':
+        msg = 'EAN                    QUANT\n'
+        diverg.map(d=>{
+          let p = ("00000000000000" + d.cod_barra).slice(-14) + ('000000' + d.qtd_inventario).slice(-6) + '\n'
+          msg += eval('`'+p+'`')
+        })
+        msg_nova = [...new Set(msg.split('\n'))]
+        msg_nova1 = ''
+        msg_nova.forEach(m=>{
+          msg_nova1 += m + '\n'
+        })
+        this.setState({txt: msg_nova1, padrao: ''})
+        break;
+
+      case 'ModMicrovixLynx':
+          diverg.map(d=>{
+            for (let i = 0; i < d.qtd_inventario; i++) {
+              let p = d.cod_barra + '\n'
+              msg += eval('`'+p+'`')
+            }
+          })
+          this.setState({txt: msg, padrao: ''})
+        break;
+
+      case 'ModTropical13':
+        diverg.map(d=>{
+          let p = ("0000000000000" + d.cod_barra).slice(-13) + ';' + ('0000000000000' + d.qtd_inventario).slice(-13) + '\n'
+          msg += eval('`'+p+'`')
+        })
+        msg_nova = [...new Set(msg.split('\n'))]
+        msg_nova1 = ''
+        msg_nova.forEach(m=>{
+          msg_nova1 += m + '\n'
+        })
+        this.setState({txt: msg_nova1, padrao: ''})
+        break;
+
+      case 'ModTropical14':
+        diverg.map(d=>{
+          let p = ("00000000000000" + d.cod_barra).slice(-14) + ';' + ('0000000000000' + d.qtd_inventario).slice(-13) + '\n'
+          msg += eval('`'+p+'`')
+        })
+        msg_nova = [...new Set(msg.split('\n'))]
+        msg_nova1 = ''
+        msg_nova.forEach(m=>{
+          msg_nova1 += m + '\n'
+        })
+        this.setState({txt: msg_nova1, padrao: ''})
+        break;
+
+      default:
+        console.log(`Sorry, we are out of ${name}.`)
+    }
+  }
+  hendleChangeTXT(e){
+    const {divergencia2, auditar1, auditar2, padrao} = this.state
+    let msg = padrao + '\n'
+    const p = padrao
+    divergencia2.map(d=>{
+      const a1 = auditar1.find(a1=>a1.id === d.id)
+      const a2 = auditar2.find(a2=>a2.id === d.id)
+      if(a2){
+        d['qtd_inventario'] = a2['qtd_inventario']
+        d['qtd_divergencia'] = a2['qtd_divergencia']
+        d['valor_divergente'] = a2['valor_divergente']
+      } else if(a1){
+        d['qtd_inventario'] = a1['qtd_inventario']
+        d['qtd_divergencia'] = a1['qtd_divergencia']
+        d['valor_divergente'] = a1['valor_divergente']
+      }
+      return d
+    }).map(d=>{
+      msg += eval('`'+p+'`')
+    })
+    const msg_nova = [...new Set(msg.split('\n'))]
+    let msg_nova1 = ''
+    msg_nova.forEach(m=>{
+      msg_nova1 += m + '\n'
+    })
+    this.setState({txt: msg_nova1})
+  }
   render() {
-    const { txt, status, auditar1, auditar2, divergencia2 } = this.state
+    const { txt, padrao, teste, status, auditar1, auditar2, divergencia2 } = this.state
     const selectRowProp = {
       mode: 'checkbox', 
       columnWidth: '60px',
@@ -502,43 +620,65 @@ export default class Divergencia extends Component {
             }  
           </Row>
       	</Container>
-      <Modal show={this.state.showModal} onHide={this.handleClose.bind(this)}>
+      <Modal show={this.state.showModal} onHide={this.handleClose.bind(this)} size={'xl'}>
         <Modal.Header closeButton>
           <Modal.Title>Gerar TXT</Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          <InputGroup className="mb-3">
+            <FormControl name='padrao' value={padrao} onChange={this.hendleChangePadrao.bind(this)}
+              placeholder="Formato do TXT"
+            />
+            <InputGroup.Append>
+              <Button variant="info" onClick={this.hendleChangeTXT.bind(this)}>Prévia</Button>
+            </InputGroup.Append>
+          </InputGroup>
           <ButtonToolbar>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='.'>.</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value=','>,</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value=';'>;</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='"'>"</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value=' '>ESPAÇO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='\n'>ENTER</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.descricao_setor_secao}'>DEPARTAMENTO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.setor_secao}'>SETOR</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.grupo}'>GRUPO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.familia}'>FAMILIA</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.subfamilia}'>SUBFAMILIA</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.cod_barra}'>EAN</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.referencia}'>REFERENCIA</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.cod_interno}'>COD_INTERNO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.descricao_item}'>DESCRICAO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.saldo_estoque}'>SALDO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.qtd_inventario}'>QUANT_INVENT</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.qtd_divergencia}'>QUANT_DIVERG</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_custo}'>CUSTO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_venda}'>VENDA</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_custo*d.saldo_estoque}'>CUSTO_SALDO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_venda*d.saldo_estoque}'>VENDA_SALDO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_custo*d.qtd_inventario}'>CUSTO_INVENT</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_venda*d.qtd_inventario}'>VENDA_INVENT</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_divergente}'>CUSTO_DIVERG</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.valor_venda*d.qtd_divergencia}'>VENDA_DIVERG</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.lote}'>LOTE</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.fabricacao}'>FABRICAÇÃO</Button>
-            <Button variant="info" onClick={this.hendlChangeTXT.bind(this)} value='${d.validade}'>VALIDADE</Button>
-          </ButtonToolbar>
-          <FormControl as="textarea" aria-label="With textarea" value={txt} readOnly/>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='\n'>ENTER</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.descricao_setor_secao}'>DEPARTAMENTO</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.setor_secao}'>SETOR</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.grupo}'>GRUPO</Button>
+          
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.familia}'>FAMILIA</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.subfamilia}'>SUBFAMILIA</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.cod_barra}'>EAN</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.referencia}'>REFERENCIA</Button>
+            
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.cod_interno}'>COD_INTERNO</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.descricao_item}'>DESCRICAO</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.saldo_estoque}'>SALDO</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.qtd_inventario}'>QUANT_INVENT</Button>
+            
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.qtd_divergencia}'>QUANT_DIVERG</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.valor_custo}'>CUSTO</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.valor_venda}'>VENDA</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.valor_custo*d.saldo_estoque}'>CUSTO_SALDO</Button>
+            
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.valor_venda*d.saldo_estoque}'>VENDA_SALDO</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.valor_custo*d.qtd_inventario}'>CUSTO_INVENT</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.valor_venda*d.qtd_inventario}'>VENDA_INVENT</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.valor_divergente}'>CUSTO_DIVERG</Button>
+
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.valor_venda*d.qtd_divergencia}'>VENDA_DIVERG</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.lote}'>LOTE</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.fabricacao}'>FABRICAÇÃO</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.validade}'>VALIDADE</Button>
+            </ButtonToolbar><div className="p-2"/>
+            <ButtonToolbar><ButtonGroup role='Teste'>
+            <Button variant="info" name='ModWinthor' onClick={this.hendleClickModelo.bind(this)} value='${d.validade}'>Sistema Winthor</Button>
+            <Button variant="info" name='ModMicrovixLynx' onClick={this.hendleClickModelo.bind(this)} value='${d.validade}'>Microvix Lynx</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='3,${d.cod_barra},${d.lote},${d.fabricacao},${d.validade},${d.qtd_inventario}\n'>Ativo</Button>
+            <Button variant="info" name='ModTropical13' onClick={this.hendleClickModelo.bind(this)} value='${d.validade}'>Ativo tropical(13)</Button>
+            <Button variant="info" name='ModTropical14' onClick={this.hendleClickModelo.bind(this)} value='${d.validade}'>Ativo tropical(14)</Button>
+            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.cod_barra};${d.qtd_inventario}\n'>Adicion</Button>
+            </ButtonGroup></ButtonToolbar>
+          <div className="p-2"/>
+          <InputGroup>
+            <InputGroup.Prepend>
+              <InputGroup.Text>Prévia</InputGroup.Text>
+            </InputGroup.Prepend>
+            <FormControl as="textarea" aria-label="With textarea" value={txt} readOnly/>
+          </InputGroup>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="info" onClick={this.handClearTXT.bind(this)}>

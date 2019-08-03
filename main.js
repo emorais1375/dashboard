@@ -1,7 +1,6 @@
 'use strict';
 
-// Import parts of electron to use
-const {app, BrowserWindow, net} = require('electron');
+const {app, BrowserWindow, ipcMain} = require('electron');
 const path = require('path')
 const url = require('url')
 let controle = 'stop' // 'pause' 'play' 'finalizado'
@@ -13,7 +12,6 @@ const env = require('./.env');
 const PouchDB = require('pouchdb');
 PouchDB.plugin(require('pouchdb-find'));
 const pouchdb_base = new PouchDB('https://arkodb-server.herokuapp.com/arko_server');
-// var pouchdb_base = new PouchDB(path.join(__dirname, 'mydb'));
 
 let db_nedb = [
   {name:'login', db : new nedb({filename: 'data/login.json', autoload: true})},
@@ -27,11 +25,8 @@ let db_nedb = [
   {name:'usuario', db : new nedb({filename: 'data/usuario.json', autoload: true})} 
 ]
 
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
 
-// Keep a reference for dev mode
 let dev = false;
 if ( process.defaultApp || /[\\/]electron-prebuilt[\\/]/.test(process.execPath) || /[\\/]electron[\\/]/.test(process.execPath) ) {
   dev = true;
@@ -42,7 +37,7 @@ function createWindow() {
   loadDB();
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 1024, height: 768, show: false
+    width: 1024, minWidth: 310, height: 768, minHeight: 395, show: false
   });
 
   // and load the index.html of the app.
@@ -68,7 +63,7 @@ function createWindow() {
     mainWindow.show();
     // Open the DevTools automatically if developing
     if ( dev ) {
-      // mainWindow.webContents.openDevTools();
+      mainWindow.webContents.openDevTools();
     }
   });
 
@@ -81,20 +76,12 @@ function createWindow() {
   });
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.on('ready', createWindow);
-
-// Quit when all windows are closed.
 app.on('window-all-closed', () => { (process.platform !== 'darwin') && app.quit() }); // On macOS, menu bar
-
 app.on('activate', () => { (mainWindow === null) && createWindow() }); // On macOS, dock
 
 function startExpress () {
   const server = require('./server')
-  const mysql = require('mysql')
-  const env = require('./.env')
 
   server.get('/login', (req, res) => {
     let cpf = req.query.cpf || ''
@@ -136,7 +123,14 @@ function startExpress () {
         res.json({retorno: -1, controle, usuario_id: null,username: null,login: -1, tipo_coleta: null})
       }
     } else {
-      res.json({retorno: 0, controle, usuario_id: null,username: null,login: -1, tipo_coleta: null})
+      res.json({
+        retorno: 0, 
+        controle, 
+        usuario_id: null,
+        username: null,
+        login: -1, 
+        tipo_coleta: null
+      })
       console.log(controle)
     }
   })
@@ -253,26 +247,7 @@ function startExpress () {
         }))
         res.json(base);
       }
-    });
-    // console.log('GET /base')
-    // let connection = mysql.createConnection(env.config_mysql)
-    // let query = `
-    //   SELECT 
-    //     cod_barra, descricao_item
-    //   FROM 
-    //     base
-    //   WHERE
-    //     inventario_id = ?
-    // `
-    // connection.query(query, [inventario_id], (error, results, fields)=>{
-    //   if(error) {
-    //     console.log(error.code,error.fatal)
-    //     res.json({retorno: -1, controle, error:error.code})
-    //     return
-    //   }
-    //   res.json(results)
-    //   connection.end()
-    // })
+    })
   })
 
   server.post('/end_status', (req, res) => {
@@ -337,38 +312,6 @@ function startExpress () {
       res.json({retorno: 0, controle})
       console.log(controle)
     }
-    // console.log('POST /end_delete')
-    // if (controle === 'play') {
-    //   const coletas  = req.body || []
-    //   let values = []
-    //   let query = ""
-
-    //   for(var i=0; i< coletas.length; i++){
-    //     values.push(
-    //       coletas[i].inventario_id,
-    //       coletas[i].tipo_coleta,
-    //       coletas[i].enderecamento,
-    //       coletas[i].data,
-    //       coletas[i].hora
-    //     )
-    //     query = query + "delete from coleta where inventario_id=? and tipo_coleta=? and enderecamento=? and data <= ? and hora <= ?;"
-    //   }
-    //   console.log(values, query)
-
-    //   let connection = mysql.createConnection(env.config_mysql)
-    //   connection.query(query, values, (error, results, fields)=>{
-    //     if(error) {
-    //       console.log(error.code,error.fatal)
-    //       res.json({retorno: -1, controle, error:error.code})
-    //       return
-    //     }
-    //     res.json({retorno: 0, controle, results})
-    //     connection.end()
-    //   })
-    // } else {
-    //   res.json({retorno: 0, controle})
-    //   console.log(controle)
-    // }
   })
 
   server.get('/', (req, res) => {
@@ -380,49 +323,75 @@ function startExpress () {
 function loadDB(){
   for (let index = 0; index < db_nedb.length; index++) {
     const db = db_nedb[index];
-    if (db.name === 'base') {
-      pouchdb_base.find({selector: {}})
-      .then(d=>{
-        db.db.remove({}, {multi:true})
-        db.db.insert(d.docs, (err) => {
-          if(err){
-            console.log(err); //caso ocorrer algum erro        
-            return;
-          } else {
-            console.log("dados carregados de " + db.name);
-          }
-        });
-      })
-      .catch(err => { 
-        console.log(err);
-      })
-    } else {
-      let connection = mysql.createConnection(env.config_mysql);
-      connection.query('SELECT * FROM ' + db.name +';', [],(error, rows, fields) => {
-      if(error){
-          console.log(db.name,error.code,error.fatal)
-          return;
-      }
-      connection.end();
-      var results = []
-      for (var i = 0;i < rows.length; i++) {
-        results.push(JSON.parse(JSON.stringify(rows[i])));
-      }
-      db.db.remove({}, {multi:true})
-      db.db.insert(results, function(err){
+    if (db.name === 'coleta'){
+      return console.log(`dados carregados de ${db.name}`);
+    }
+    else if (db.name === 'base') {
+      pouchdb_base.find({selector: {}}, (err, d) => {
         if(err){
-          console.log(err); //caso ocorrer algum erro        
-          return;
+          return console.log(`falha ao carregar dados de ${db.name}, ${err}`)
+        } else if(!d.docs.length){
+          return console.log(`dados carregados de ${db.name}, porem o servidor está vazio`)
         } else {
-          console.log("dados carregados de " + db.name);
+          db.db.remove({}, {multi:true}, (err, n) => {
+            if (err) {
+              return console.log(`falha ao remover dados de ${db.name}, ${err}`);
+            } else {
+              db.db.insert(d.docs, (err) => {
+                if(err){
+                  return console.log(`falha ao inserir dados de ${db.name}, ${err}`);
+                } else {
+                  return console.log(`dados carregados de ${db.name}`);
+                }
+              })
+            }
+          })
         }
-      }); 
-    });
+      })
+      // .then(d=>{
+      //   db.db.remove({}, {multi:true})
+      //   db.db.insert(d.docs, (err) => {
+      //     if(err){
+      //       console.log(err); //caso ocorrer algum erro        
+      //       return;
+      //     } else {
+      //       console.log("dados carregados de " + db.name);
+      //     }
+      //   });
+      // })
+      // .catch(err => { 
+      //   console.log(err);
+      // })
+    } else {
+      const connectionUri = env.config_mysql
+      let connection = mysql.createConnection(connectionUri);
+      connection.query('SELECT * FROM ' + db.name +';', [],(err, rows, fields) => {
+        if(err){
+          return console.log(`falha ao carregar dados de ${db.name}, ${err.code}, ${err.fatal}`)
+        }
+        connection.end()
+        var results = []
+        for (var i = 0;i < rows.length; i++) {
+          results.push(JSON.parse(JSON.stringify(rows[i])));
+        }
+        db.db.remove({}, {multi:true}, (err) => {
+          if (err) {
+            console.log(`falha ao remover dados de ${db.name}, ${err}`);
+          } else {
+            db.db.insert(results, (err) => {
+              if(err){
+                console.log(`falha ao inserir dados de ${db.name}, ${err}`); //caso ocorrer algum erro        
+              } else {
+                console.log("dados carregados de " + db.name);
+              }
+            })
+          }
+        })
+      })
     }
   }
 }
 
-const { ipcMain } = require('electron')
 ipcMain.on('asynchronous-message', (event, arg) => {
   console.log('Controle: '+arg.controle) // prints "ping"
   controle = arg.controle // 'start' 'pause' 'finalizado'
@@ -434,8 +403,6 @@ ipcMain.on('set-inventario', (event, arg) => {
   inventario_id = arg // 'start' 'pause' 'finalizado'
 })
 ipcMain.on('loadDB', (event, arg) => {
-  console.log('loadDB: '+arg) // prints "ping"
-  inventario_id = arg // 'start' 'pause' 'finalizado'
   loadDB()
 })
 ipcMain.on('insert-base', (event, arg) => {
@@ -505,4 +472,7 @@ ipcMain.on('getColeta', (event, arg) => {
   db.db.find({inventario_id: inventario_id, tipo_coleta: 'INVENTARIO'}, (err, docs)=>{
     event.returnValue = docs
   })
+})
+ipcMain.on('log', (event, message) => {
+  console.log(message);
 })
