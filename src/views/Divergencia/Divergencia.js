@@ -313,7 +313,6 @@ export default class Divergencia extends Component {
     const value = target.value
     const name = target.name
     const type = target.type
-    let msg = ''
     const diverg = this.state.divergencia2.map(d=>{
       const a1 = this.state.auditar1.find(a1=>a1.id === d.id)
       const a2 = this.state.auditar2.find(a2=>a2.id === d.id)
@@ -330,7 +329,32 @@ export default class Divergencia extends Component {
     })
     let msg_nova = []
     let msg_nova1 = ''
+    let msg = ''
     switch (name) {
+      case 'ModAdicion':
+        diverg.map(d=>{
+          msg += `${d.cod_barra},${d.qtd_inventario}\n`
+        })
+        msg_nova = [...new Set(msg.split('\n'))]
+        msg_nova1 = ''
+        msg_nova.forEach(m=>{
+          msg_nova1 += m + '\n'
+        })
+        this.setState({txt: msg_nova1, padrao: ''})
+        break;
+      case 'ModAtivo':
+        msg = '1,1,01\n2,ENDERECO\n'
+        diverg.map(d=>{
+          let p = '3,${d.cod_barra},${d.lote},${d.fabricacao},${d.validade},'+('000000' + d.qtd_inventario).slice(-6)+'\n'
+          msg += eval('`'+p+'`')
+        })
+        msg_nova = [...new Set(msg.split('\n'))]
+        msg_nova1 = ''
+        msg_nova.forEach(m=>{
+          msg_nova1 += m + '\n'
+        })
+        this.setState({txt: msg_nova1, padrao: ''})
+        break;
       case 'ModWinthor':
         msg = 'EAN                    QUANT\n'
         diverg.map(d=>{
@@ -664,13 +688,13 @@ export default class Divergencia extends Component {
             <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.fabricacao}'>FABRICAÇÃO</Button>
             <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.validade}'>VALIDADE</Button>
             </ButtonToolbar><div className="p-2"/>
-            <ButtonToolbar><ButtonGroup role='Teste'>
-            <Button variant="info" name='ModWinthor' onClick={this.hendleClickModelo.bind(this)} value='${d.validade}'>Sistema Winthor</Button>
-            <Button variant="info" name='ModMicrovixLynx' onClick={this.hendleClickModelo.bind(this)} value='${d.validade}'>Microvix Lynx</Button>
-            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='3,${d.cod_barra},${d.lote},${d.fabricacao},${d.validade},${d.qtd_inventario}\n'>Ativo</Button>
-            <Button variant="info" name='ModTropical13' onClick={this.hendleClickModelo.bind(this)} value='${d.validade}'>Ativo tropical(13)</Button>
-            <Button variant="info" name='ModTropical14' onClick={this.hendleClickModelo.bind(this)} value='${d.validade}'>Ativo tropical(14)</Button>
-            <Button variant="info" onClick={this.hendleChangePadrao.bind(this)} value='${d.cod_barra};${d.qtd_inventario}\n'>Adicion</Button>
+            <ButtonToolbar><ButtonGroup>
+            <Button variant="info" name='ModWinthor' onClick={this.hendleClickModelo.bind(this)}>Sistema Winthor</Button>
+            <Button variant="info" name='ModMicrovixLynx' onClick={this.hendleClickModelo.bind(this)}>Microvix Lynx</Button>
+            <Button variant="info" name='ModAtivo'onClick={this.hendleClickModelo.bind(this)}>Ativo</Button>
+            <Button variant="info" name='ModTropical13' onClick={this.hendleClickModelo.bind(this)}>Ativo tropical(13)</Button>
+            <Button variant="info" name='ModTropical14' onClick={this.hendleClickModelo.bind(this)}>Ativo tropical(14)</Button>
+            <Button variant="info" name='ModAdicion' onClick={this.hendleClickModelo.bind(this)}>Adicion</Button>
             </ButtonGroup></ButtonToolbar>
           <div className="p-2"/>
           <InputGroup>
