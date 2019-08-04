@@ -31,7 +31,7 @@ export default class Divergencia extends Component {
 	constructor(props){
     super(props);
     this.state = {
-      showModal: true,
+      showModal: false,
       cod_barra: '', desc: '', saldo: 0,
       checkAll: false,
       divergencia: [],
@@ -131,15 +131,12 @@ export default class Divergencia extends Component {
         resolve()
       }).then(()=>{
         this.setState({coleta: results})
-        console.log('coleta:',coleta)
       })
       resolve()
     })
   }
   createDivergencia(){
     const { base, coleta } = this.state
-    console.log('coleta:',coleta)
-    console.log('base:',base)
     let divergencia2 = []
     Promise.resolve(
       base.map(b =>{
@@ -183,7 +180,6 @@ export default class Divergencia extends Component {
         }
       })
     ).then(()=>{
-      console.log(divergencia2)
       this.setState({divergencia2})
     })
   }
@@ -461,8 +457,8 @@ export default class Divergencia extends Component {
     return (
       <div className="content">
         <div>
-          <div className="d-inline p-2"><NaoContados /></div>
-          <div className="d-inline p-2"><Download /></div>
+          <div className="d-inline p-2"><NaoContados base={this.state.base} coleta  ={this.state.coleta} /></div>
+          {/* <div className="d-inline p-2"><Download /></div> */}
         </div>
         <h1>{titulo}</h1>
         <Container fluid>
