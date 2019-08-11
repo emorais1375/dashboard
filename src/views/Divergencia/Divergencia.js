@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import readXlsxFile from 'read-excel-file/node';
+import ReactExport from "react-data-export"
 import Download from '../../components/Download'
 import NaoContados from "../../components/NaoContados";
 import { BootstrapTable, TableHeaderColumn}  from 'react-bootstrap-table'
@@ -18,6 +19,9 @@ import {
 } from "react-bootstrap"
 import FileSaver from 'file-saver'
 
+const ExcelFile = ReactExport.ExcelFile;
+const ExcelSheet = ReactExport.ExcelFile.ExcelSheet;
+const ExcelColumn = ReactExport.ExcelFile.ExcelColumn;
 
 function jobStatusValidator(value) {
   const nan = isNaN(parseInt(Number(value), 10));
@@ -46,7 +50,12 @@ export default class Divergencia extends Component {
       inventario_id: localStorage.getItem('inv_id') || '',
       file: null,
       status: 'diverg', // [diverg,audit1,audit2]
-      txt: '', padrao: ''
+      txt: '', padrao: '',
+      rl_div: [],
+      confronto: [],
+      itensNaoContados: [],
+
+
     }
     this.auditar = this.auditar.bind(this)
   }
@@ -135,6 +144,75 @@ export default class Divergencia extends Component {
       resolve()
     })
   }
+  createDivergencia2(){
+      const { base, coleta, auditar1,auditar2 } = this.state
+      let divergencia = []
+      Promise.resolve(
+          base.map(b =>{
+            let element = coleta.filter(c => b.cod_barra === c.cod_barra)
+            if (element.length) {
+              let qtd_inventario_total = 0
+              element.map(element => {
+                let div ={
+                  id: element['cod_barra'] + element['enderecamento'] + element['validade'] + element['lote'],
+                  cod_barra: b['cod_barra'],
+                  cod_interno: b['cod_interno'],
+                  descricao_item: b['descricao_item'],
+                  descricao_setor_secao: b['descricao_setor_secao'],
+                  familia: b['familia'],
+                  grupo: b['grupo'],
+                  base_id: b['id'],
+                  inventario_id: b['inventario_id'],
+                  referencia: b['referencia'],
+                  saldo_estoque: b['saldo_estoque'],
+                  setor_secao: b['setor_secao'],
+                  subfamilia: b['subfamilia'],
+                  valor_custo: b['valor_custo'],
+                  valor_venda: b['valor_venda'],
+                  enderecamento: element['enderecamento'],
+                  qtd_inventario: element['qtd_inventario'],
+                  audit1: 0,
+                  audit1_selected: false,
+                  audit2: 0,
+                  audit2_selected: false,
+                  validade: element['validade'],
+                  lote: element['lote'],
+                  fabricacao: element['fabricacao']
+                }
+                qtd_inventario_total += element['qtd_inventario']
+                return div
+              }).map(element => {
+                element['qtd_divergencia'] = qtd_inventario_total - element['saldo_estoque']
+                element['valor_divergente'] = Number(((qtd_inventario_total - element['saldo_estoque'])*element['valor_custo']).toFixed(2))
+                // if(element.qtd_divergencia !== 0) divergencia.push(element)
+                return element
+              }).map(d=>{
+                if(d['qtd_divergencia'] !== 0) {
+                  const a1 = auditar1.find(a1=>a1.id === d.id)
+                  const a2 = auditar2.find(a2=>a2.id === d.id)
+                  if(a2){
+                    d['audit1'] = a1['qtd_inventario']
+                    d['audit2'] = a2['qtd_inventario']
+                    d['qtd_divergencia'] = a2['qtd_divergencia']
+                    d['valor_divergente'] = a2['valor_divergente']
+                    divergencia.push(d)
+                  } else if(a1){
+                    d['audit1'] = a1['qtd_inventario']
+                    d['qtd_divergencia'] = a1['qtd_divergencia']
+                    d['valor_divergente'] = a1['valor_divergente']
+                    divergencia.push(d)
+                  } else {
+                    divergencia.push(d)
+                  }
+                }
+              })
+            }
+          })
+      ).then(()=>{
+          this.setState({rl_div: divergencia})
+          console.log(divergencia)
+      })
+  }
   createDivergencia(){
     const { base, coleta } = this.state
     let divergencia2 = []
@@ -180,28 +258,31 @@ export default class Divergencia extends Component {
         }
       })
     ).then(()=>{
-      this.setState({divergencia2})
+      this.setState({divergencia2, rl_div: divergencia2})
     })
   }
   auditar() {
     const {status, selected, divergencia2, auditar1} = this.state
       Promise.resolve(
-        selected.map(s => {
-          if (status==='diverg'){
-            return divergencia2.find(d => d.id === s)
-          } else {
-            return auditar1.find(d => d.id === s)
+        divergencia2.map(d => {
+          if (selected.includes(d.id)) {
+            if (status==='diverg'){
+              d['audit1_selected'] = true
+              d['audit1'] = d['qtd_inventario']
+            }
+            else {
+              d['audit2_selected'] = true
+              d['audit2'] = d['audit1']
+            }
           }
+          return d
         })
       ).then(div => {
-        if (div.length) {
-          localStorage.setItem('div1', JSON.stringify(div))
-          localStorage.setItem('rl_1', JSON.stringify(divergencia2))
+        if (selected.length) {
           if (status==='diverg'){
-            console.table(div)
-            this.setState({status: 'audit1', auditar1: div, selected: []})
+            this.setState({status: 'audit1', divergencia2: div, selected: []})
           } else if(status==='audit1') {
-            this.setState({status: 'audit2', auditar2: div, selected: []})
+            this.setState({status: 'audit2', divergencia2: div, selected: []})
           }
         } else {
           alert('Não foram selecionados itens para serem auditados.')
@@ -242,8 +323,8 @@ export default class Divergencia extends Component {
         })
       } else {
         this.setState({ 
-          selected: this.state.auditar1.filter(
-            d => d['qtd_divergencia'] !== 0 && d['enderecamento'] !== 'desconhecido'
+          selected: this.state.divergencia2.filter(
+            d => d['audit1_selected'] === true && d['qtd_divergencia'] !== 0 && d['enderecamento'] !== 'desconhecido'
           ).map(d => d.id) 
         })
 
@@ -433,7 +514,7 @@ export default class Divergencia extends Component {
     this.setState({txt: msg_nova1})
   }
   render() {
-    const { txt, padrao, teste, status, auditar1, auditar2, divergencia2 } = this.state
+    const { confronto, rl_div, itensNaoContados, txt, padrao, teste, status, auditar1, auditar2, divergencia2 } = this.state
     const selectRowProp = {
       mode: 'checkbox', 
       columnWidth: '60px',
@@ -457,8 +538,66 @@ export default class Divergencia extends Component {
     return (
       <div className="content">
         <div>
-          <div className="d-inline p-2"><NaoContados base={this.state.base} coleta  ={this.state.coleta} /></div>
+          <div className="d-inline p-2"><NaoContados /></div>
           {/* <div className="d-inline p-2"><Download /></div> */}
+          <div className="d-inline p-2">
+            <ExcelFile
+                filename="rl_relatorios"
+                element={<Button onClick={this.createDivergencia2.bind(this)} variant="info">Baixar relatórios</Button>}>
+                <ExcelSheet data={divergencia2} name="Confronto">
+                    <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
+                    <ExcelColumn label="SETOR" value="setor_secao"/>
+                    <ExcelColumn label="GRUPO" value="grupo"/>
+                    <ExcelColumn label="FAMÍLIA" value="familia"/>
+                    <ExcelColumn label="SUBFAMILIA" value="subfamilia"/>
+                    <ExcelColumn label="EAN" value="cod_barra"/>
+                    <ExcelColumn label="REFERÊNCIA" value="referencia"/>
+                    <ExcelColumn label="CÓDIGO INTERNO" value="cod_interno"/>
+                    <ExcelColumn label="DESCRIÇÃO" value="descricao_item"/>
+                    <ExcelColumn label="SALDO" value="saldo_estoque"/>
+                    <ExcelColumn label="QUANT INVENT" value="qtd_inventario"/>
+                    <ExcelColumn label="CUSTO" value="valor_custo"/>
+                    <ExcelColumn label="VENDA" value="valor_venda"/>
+                    <ExcelColumn label="DIVERG" value="qtd_divergencia"/>
+                    <ExcelColumn label="CUSTO SALDO" value={(c)=> Number((c.valor_custo*c.saldo_estoque).toFixed(2))}/>
+                    <ExcelColumn label="VENDA SALDO" value={(c)=> Number((c.valor_venda*c.saldo_estoque).toFixed(2))}/>
+                    <ExcelColumn label="CUSTO INVENT" value={(c)=> Number((c.valor_custo*c.qtd_inventario).toFixed(2))}/>
+                    <ExcelColumn label="VENDA INVENT" value={(c)=> Number((c.valor_venda*c.qtd_inventario).toFixed(2))}/>
+                    <ExcelColumn label="CUSTO DIVERG" value={(c)=> Number((c.valor_custo*c.qtd_divergencia).toFixed(2))}/>
+                    <ExcelColumn label="VENDA DIVERG" value={(c)=> Number((c.valor_venda*c.qtd_divergencia).toFixed(2))}/>
+                </ExcelSheet>
+                <ExcelSheet data={divergencia2} name="Relatório Diverg">
+                    <ExcelColumn label="ENDEREÇO" value="enderecamento"/>
+                    <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
+                    <ExcelColumn label="SETOR" value="setor_secao"/>
+                    <ExcelColumn label="GRUPO" value="grupo"/>
+                    <ExcelColumn label="FAMÍLIA" value="familia"/>
+                    <ExcelColumn label="SUBFAMILIA" value="subfamilia"/>
+                    <ExcelColumn label="EAN" value="cod_barra"/>
+                    <ExcelColumn label="LOTE" value="lote"/>
+                    <ExcelColumn label="FABRICAÇÃO" value="fabricacao"/>
+                    <ExcelColumn label="VALIDADE" value="validade"/>
+                    <ExcelColumn label="REFERÊNCIA" value="referencia"/>
+                    <ExcelColumn label="CÓDIGO INTERNO" value="cod_interno"/>
+                    <ExcelColumn label="DESCRIÇÃO" value="descricao_item"/>
+                    <ExcelColumn label="QUANT INVENT" value="qtd_inventario"/>
+                    <ExcelColumn label="QUANT AUDIT1" value="audit1"/>
+                    <ExcelColumn label="QUANT AUDIT2" value="audit2"/>
+                    <ExcelColumn label="DIVERG" value="qtd_divergencia"/>
+                </ExcelSheet>
+                <ExcelSheet data={itensNaoContados} name="Relatório itens não contados">
+                    <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
+                    <ExcelColumn label="SETOR" value="setor_secao"/>
+                    <ExcelColumn label="COD" value="cod_interno"/>
+                    <ExcelColumn label="EAN" value="cod_barra"/>
+                    <ExcelColumn label="DESCRIÇÃO" value="descricao_item"/>
+                    <ExcelColumn label="REF" value="referencia"/>
+                    <ExcelColumn label="SALDO" value="saldo_estoque"/>
+                    <ExcelColumn label="QUANT INVENT" value="qtd_inventario"/>
+                    <ExcelColumn label="DIVERG" value="qtd_divergente"/>
+                </ExcelSheet>
+            </ExcelFile>
+          </div>
         </div>
         <h1>{titulo}</h1>
         <Container fluid>
@@ -539,11 +678,10 @@ export default class Divergencia extends Component {
             </BootstrapTable>
             }  
 
-            {status ==='audit1' && <BootstrapTable data={auditar1} height='340' scrollTop={ 'Bottom' }
+            {status ==='audit1' && <BootstrapTable data={divergencia2.filter(d=>d.audit1_selected===true)} height='340' scrollTop={ 'Bottom' }
               cellEdit={{
                 mode: 'dbclick',
                 beforeSaveCell: (row, cellName, cellValue) =>{
-                  console.log('beforeSaveCell')
                   alert(`Salvar o saldo da célula com o valor ${cellValue}`);
 
                   let rowStr = '';
@@ -553,22 +691,28 @@ export default class Divergencia extends Component {
                 },
                 afterSaveCell: (row, cellName, cellValue)=>{
                   let qtd_inventario_total = 0
-                  let div = this.state.auditar1.map(item => {
-                    if(item['id'] === row['id']) {
-                      item['qtd_inventario'] =  Number(cellValue)
-                      qtd_inventario_total += Number(cellValue)
-                    } else if (item['base_id'] === row['base_id']){
-                      qtd_inventario_total += item['qtd_inventario']
-                    }
-                    return item
-                  }).map(item => {
-                    if(item['base_id'] === row['base_id']) {
-                      item['qtd_divergencia'] = qtd_inventario_total - item['saldo_estoque']
-                      item['valor_divergente'] = Number(((qtd_inventario_total - item['saldo_estoque'])*item['valor_custo']).toFixed(2))
-                    }
-                    return item
+                  Promise.resolve(
+                    this.state.divergencia2.map(item => {
+                      if(item['id'] === row['id']) {
+                        item['audit1'] =  Number(cellValue)
+                        qtd_inventario_total += Number(cellValue)
+                      } else if (item['base_id'] === row['base_id']){
+                        if (item['audit1_selected'])
+                          qtd_inventario_total += item['audit1']
+                        else
+                          qtd_inventario_total += item['qtd_inventario']
+                      }
+                      return item
+                    }).map(item => {
+                      if(item['base_id'] === row['base_id']) {
+                        item['qtd_divergencia'] = qtd_inventario_total - item['saldo_estoque']
+                        item['valor_divergente'] = Number(((qtd_inventario_total - item['saldo_estoque'])*item['valor_custo']).toFixed(2))
+                      }
+                      return item
+                    })
+                  ).then(div=>{
+                    this.setState({divergencia2: div})
                   })
-                  this.setState({auditar1: div})
                   return true;
                 }
               }}
@@ -576,12 +720,12 @@ export default class Divergencia extends Component {
               striped search exportCSV
               options={ options }>
               <TableHeaderColumn dataField='id' isKey hidden>ID</TableHeaderColumn>
-              <TableHeaderColumn dataField='cod_barra' editable={ false } width='140' dataSort>EAN ({auditar1.length})</TableHeaderColumn>
+              <TableHeaderColumn dataField='cod_barra' editable={ false } width='140' dataSort>EAN ({divergencia2.filter(d=>d.audit1_selected===true).length})</TableHeaderColumn>
               <TableHeaderColumn dataField='enderecamento' editable={ false } tdStyle={{whiteSpace: 'normal'}} dataSort>Enderecamento</TableHeaderColumn>
               <TableHeaderColumn dataField='descricao_item' editable={ false } tdStyle={{whiteSpace: 'normal'}} dataSort>Descrição</TableHeaderColumn>
               <TableHeaderColumn dataField='validade' editable={ false } width='80' dataSort>Validade</TableHeaderColumn>
               <TableHeaderColumn dataField='lote' editable={ false } width='80' dataSort>Lote</TableHeaderColumn>
-              <TableHeaderColumn dataField='qtd_inventario' editable={ false } width='80' dataSort editable={ { validator: jobStatusValidator } }>Coleta</TableHeaderColumn>
+              <TableHeaderColumn dataField='audit1' editable={ false } width='80' dataSort editable={ { validator: jobStatusValidator } }>Coleta</TableHeaderColumn>
               <TableHeaderColumn dataField='saldo_estoque' editable={ false }  width='80' dataSort>Saldo</TableHeaderColumn>
               <TableHeaderColumn dataField='qtd_divergencia' editable={ false } width='90' dataSort>Quantidade</TableHeaderColumn>
               <TableHeaderColumn dataField='valor_divergente' editable={ false } width='100' dataSort dataFormat={ (cell, row) =>{
@@ -590,7 +734,7 @@ export default class Divergencia extends Component {
             </BootstrapTable>
             }  
 
-            {status ==='audit2' && <BootstrapTable data={auditar2} height='340' scrollTop={ 'Bottom' }
+            {status ==='audit2' && <BootstrapTable data={divergencia2.filter(d=>d.audit2_selected===true)} height='340' scrollTop={ 'Bottom' }
               cellEdit={{
                 mode: 'dbclick',
                 beforeSaveCell: (row, cellName, cellValue) =>{
@@ -603,34 +747,42 @@ export default class Divergencia extends Component {
                 },
                 afterSaveCell: (row, cellName, cellValue)=>{
                   let qtd_inventario_total = 0
-                  let div = this.state.auditar2.map(item => {
-                    if(item['id'] === row['id']) {
-                      item['qtd_inventario'] =  Number(cellValue)
-                      qtd_inventario_total += Number(cellValue)
-                    } else if (item['base_id'] === row['base_id']){
-                      qtd_inventario_total += item['qtd_inventario']
-                    }
-                    return item
-                  }).map(item => {
-                    if(item['base_id'] === row['base_id']) {
-                      item['qtd_divergencia'] = qtd_inventario_total - item['saldo_estoque']
-                      item['valor_divergente'] = Number(((qtd_inventario_total - item['saldo_estoque'])*item['valor_custo']).toFixed(2))
-                    }
-                    return item
+                  Promise.resolve(
+                    this.state.divergencia2.map(item => {
+                      if(item['id'] === row['id']) {
+                        item['audit2'] =  Number(cellValue)
+                        qtd_inventario_total += Number(cellValue)
+                      } else if (item['base_id'] === row['base_id']){
+                        if (item['audit2_selected'])
+                          qtd_inventario_total += item['audit2']
+                        else if (item['audit1_selected'])
+                          qtd_inventario_total += item['audit1']
+                        else
+                          qtd_inventario_total += item['qtd_inventario']
+                      }
+                      return item
+                    }).map(item => {
+                      if(item['base_id'] === row['base_id']) {
+                        item['qtd_divergencia'] = qtd_inventario_total - item['saldo_estoque']
+                        item['valor_divergente'] = Number(((qtd_inventario_total - item['saldo_estoque'])*item['valor_custo']).toFixed(2))
+                      }
+                      return item
+                    })
+                  ).then(div =>{
+                    this.setState({divergencia2: div})
                   })
-                  this.setState({auditar2: div})
-                  return true;
+                  return true
                 }
               }}
               striped search exportCSV
               options={ options }>
               <TableHeaderColumn dataField='id' isKey hidden>ID</TableHeaderColumn>
-              <TableHeaderColumn dataField='cod_barra' editable={ false } width='140' dataSort>EAN  ({auditar1.length})</TableHeaderColumn>
+              <TableHeaderColumn dataField='cod_barra' editable={ false } width='140' dataSort>EAN  ({divergencia2.filter(d=>d.audit2_selected===true).length})</TableHeaderColumn>
               <TableHeaderColumn dataField='enderecamento' editable={ false } tdStyle={{whiteSpace: 'normal'}} dataSort>Enderecamento</TableHeaderColumn>
               <TableHeaderColumn dataField='descricao_item' editable={ false } tdStyle={{whiteSpace: 'normal'}} dataSort>Descrição</TableHeaderColumn>
               <TableHeaderColumn dataField='validade' editable={ false } width='80' dataSort>Validade</TableHeaderColumn>
               <TableHeaderColumn dataField='lote' editable={ false } width='80' dataSort>Lote</TableHeaderColumn>
-              <TableHeaderColumn dataField='qtd_inventario' width='80' dataSort editable={ { validator: jobStatusValidator } }>Coleta</TableHeaderColumn>
+              <TableHeaderColumn dataField='audit2' width='80' dataSort editable={ { validator: jobStatusValidator } }>Coleta</TableHeaderColumn>
               <TableHeaderColumn dataField='saldo_estoque' editable={ false } width='80' dataSort>Saldo</TableHeaderColumn>
               <TableHeaderColumn dataField='qtd_divergencia' editable={ false } width='90' dataSort>Quantidade</TableHeaderColumn>
               <TableHeaderColumn dataField='valor_divergente' editable={ false } width='100' dataSort dataFormat={ (cell, row) =>{
