@@ -133,7 +133,8 @@ export default class Divergencia extends Component {
               'qtd_inventario':col.itens_embalagem,
               'validade': col.validade,
               'lote': col.lote,
-              'fabricacao': col.fabricacao
+              'fabricacao': col.fabricacao,
+              'inventario_id': col.inventario_id
             });
           }
         })
@@ -184,12 +185,87 @@ export default class Divergencia extends Component {
           }).map(element => {
             element['qtd_divergencia'] = qtd_inventario_total - element['saldo_estoque']
             element['valor_divergente'] = Number(((qtd_inventario_total - element['saldo_estoque'])*element['valor_custo']).toFixed(2))
-            // if(element.qtd_divergencia !== 0) 
             divergencia2.push(element)
           })
         }
       })
     ).then(()=>{
+      const fora_base = coleta.filter(c => !base.map(b=>b.cod_barra).includes(c.cod_barra))
+      const fora_base_c = [...new Set(fora_base.map(fb=>fb.cod_barra))]
+      fora_base_c.map(b=>{
+        let element = fora_base.filter(c => b === c.cod_barra)
+        if (element.length) {
+          let qtd_inventario_total = 0
+          element.map(element => {
+            let div ={
+              id: element['cod_barra'] + element['enderecamento'] + element['validade'] + element['lote'],
+              cod_barra: element['cod_barra'],
+              cod_interno: '',
+              descricao_item: '',
+              descricao_setor_secao: '',
+              familia: '',
+              grupo: '',
+              base_id: '',
+              inventario_id: element['inventario_id'],
+              referencia: '',
+              saldo_estoque: 0,
+              setor_secao: '',
+              subfamilia: '',
+              valor_custo: null,
+              valor_venda: null,
+              enderecamento: element['enderecamento'],
+              qtd_inventario: element['qtd_inventario'],
+              audit1: 0,
+              audit1_selected: false,
+              audit2: 0,
+              audit2_selected: false,
+              validade: element['validade'],
+              lote: element['lote'],
+              fabricacao: element['fabricacao']
+            }
+            qtd_inventario_total += element['qtd_inventario']
+            return div
+          }).map(element => {
+            element['qtd_divergencia'] = qtd_inventario_total - element['saldo_estoque']
+            element['valor_divergente'] = Number(((qtd_inventario_total - element['saldo_estoque'])*element['valor_custo']).toFixed(2))
+            divergencia2.push(element)
+          })
+        }
+      })
+    }).then(()=>{
+      const nao_cout = base.filter(b => !coleta.map(c=>c.cod_barra).includes(b.cod_barra))
+      nao_cout.map(b=>{
+        let div ={
+          id: b['cod_barra'],
+          cod_barra: b['cod_barra'],
+          cod_interno: b['cod_interno'],
+          descricao_item: b['descricao_item'],
+          descricao_setor_secao: b['descricao_setor_secao'],
+          familia: b['familia'],
+          grupo: b['grupo'],
+          base_id: b['id'],
+          inventario_id: b['inventario_id'],
+          referencia: b['referencia'],
+          saldo_estoque: b['saldo_estoque'],
+          setor_secao: b['setor_secao'],
+          subfamilia: b['subfamilia'],
+          valor_custo: b['valor_custo'],
+          valor_venda: b['valor_venda'],
+          enderecamento: '',
+          qtd_inventario: 0,
+          audit1: 0,
+          audit1_selected: false,
+          audit2: 0,
+          audit2_selected: false,
+          validade: '',
+          lote: '',
+          fabricacao: '',
+          qtd_divergencia: b['saldo_estoque']*-1,
+          valor_divergente: Number((b['saldo_estoque']*-1*b['valor_custo']).toFixed(2))
+        }
+        divergencia2.push(div)
+      })
+    }).then(()=>{
       this.setState({divergencia2, rl_div: divergencia2})
     })
   }
@@ -231,10 +307,10 @@ export default class Divergencia extends Component {
       this.setState({status: 'audit1'})
     }
   }
-  onRowSelect({ id, qtd_divergencia, enderecamento }, isSelected) {
-    if (isSelected && (qtd_divergencia === 0 || enderecamento === 'desconhecido')) {
+  onRowSelect({ id, qtd_divergencia, enderecamento, base_id }, isSelected) {
+    if (isSelected && (qtd_divergencia === 0 || enderecamento === 'desconhecido' || base_id === '')) {
       alert('O item não deu divergência ou não tem endereçamento');
-    } else if (isSelected && (qtd_divergencia !== 0 || enderecamento !== 'desconhecido')){
+    } else if (isSelected && (qtd_divergencia !== 0 || enderecamento !== 'desconhecido' || base_id !== '')){
       this.setState({
         selected: [ ...this.state.selected, id ].sort()
       });
@@ -250,13 +326,13 @@ export default class Divergencia extends Component {
       if(status === 'diverg') {
         this.setState({ 
           selected: this.state.divergencia2.filter(
-            d => d['qtd_divergencia'] !== 0 && d['enderecamento'] !== 'desconhecido'
+            d => d.qtd_inventario !==0 && d['base_id'] !== '' && d['qtd_divergencia'] !== 0 && d['enderecamento'] !== 'desconhecido'
           ).map(d => d.id) 
         })
       } else {
         this.setState({ 
           selected: this.state.divergencia2.filter(
-            d => d['audit1_selected'] === true && d['qtd_divergencia'] !== 0 && d['enderecamento'] !== 'desconhecido'
+            d => d.qtd_inventario !==0 &&  d['audit1_selected'] === true && d['base_id'] !== '' && d['qtd_divergencia'] !== 0 && d['enderecamento'] !== 'desconhecido'
           ).map(d => d.id) 
         })
 
@@ -445,6 +521,183 @@ export default class Divergencia extends Component {
     })
     this.setState({txt: msg_nova1})
   }
+  returnConfronto(){
+    const {divergencia2} = this.state
+
+    let results = []
+    divergencia2.forEach(col => {
+      if (!results.find( elem => {
+        if(elem.cod_barra === col.cod_barra){
+          return true;
+        }
+        return false;
+      })){
+        results.push({
+          'descricao_setor_secao' : col.descricao_setor_secao, 
+          'setor_secao': col.setor_secao,
+          'grupo':col.grupo,
+          'familia': col.familia,
+          'subfamilia': col.subfamilia,
+          'cod_barra': col.cod_barra,
+          'descricao_item' : col.descricao_item, 
+          'saldo_estoque': col.saldo_estoque,
+          'qtd_inv_final': col.qtd_divergencia + col.saldo_estoque,
+          'valor_custo': col.valor_custo,
+          'valor_venda': col.valor_venda,
+          'qtd_divergencia': col.qtd_divergencia
+        });
+      }
+    })
+    return results
+  }
+  returnDiverg(){
+    
+    const {divergencia2} = this.state
+
+    let results = []
+    divergencia2.forEach(col => {
+      if (!results.find( elem => {
+        if(elem.cod_barra === col.cod_barra && 
+          elem.cod_barra === col.cod_barra){
+          return true;
+        }
+        return false;
+      })){
+        results.push({
+          'enderecamento': col.enderecamento,
+          'descricao_setor_secao': col.descricao_setor_secao,
+          'setor_secao': col.setor_secao,
+          'cod_interno': col.cod_interno,
+          'cod_barra': col.cod_barra,
+          'base_id': col.base_id,
+          'descricao_item' : col.descricao_item,
+          'qtd_inv_final': col.qtd_divergencia + col.saldo_estoque,
+          'qtd_divergencia': col.qtd_divergencia
+        });
+      }
+    })
+    return results.filter(r=>r.qtd_divergencia!==0 && r.base_id!=='' && r.qtd_inv_final !==0 )
+  }
+  returnContagem(){
+    const {divergencia2} = this.state
+    return divergencia2.map(d=>{
+      if(d.audit2_selected)
+        d['cout_final'] =  d['audit2']
+      else if(d.audit1_selected)
+        d['cout_final'] =  d['audit1']
+      else
+        d['cout_final'] =  d['qtd_inventario']
+      return d
+    }).filter(d=>d.qtd_inventario!==0)
+  }
+  returnNaoContados(){
+    const { base,coleta } = this.state
+    const nao_cout = base.filter(b => !coleta.map(c=>c.cod_barra).includes(b.cod_barra))
+    return nao_cout
+  }
+  returnResumoConf(){
+    const { divergencia2 } = this.state
+
+    let res = []
+    let total_invent = 0
+    let total_saldo = 0
+    let total_diverg = 0
+    let div_positiva = 0
+    let div_negativa = 0
+   
+    let custo_total_invent = 0
+    let custo_total_saldo = 0
+    let custo_total_diverg = 0
+    let custo_div_positiva = 0
+    let custo_div_negativa = 0
+    
+    let venda_total_invent = 0
+    let venda_total_saldo = 0
+    let venda_total_diverg = 0
+    let venda_div_positiva = 0
+    let venda_div_negativa = 0
+
+    let results = []
+    divergencia2.forEach(col => {
+      if (!results.find( elem => {
+        if(elem.cod_barra === col.cod_barra){
+          return true;
+        }
+        return false;
+      })){
+        results.push({
+          'descricao_setor_secao' : col.descricao_setor_secao, 
+          'setor_secao': col.setor_secao,
+          'grupo':col.grupo,
+          'familia': col.familia,
+          'subfamilia': col.subfamilia,
+          'cod_barra': col.cod_barra,
+          'descricao_item' : col.descricao_item, 
+          'saldo_estoque': col.saldo_estoque,
+          'qtd_inv_final': col.qtd_divergencia + col.saldo_estoque,
+          'valor_custo': col.valor_custo,
+          'valor_venda': col.valor_venda,
+          'qtd_divergencia': col.qtd_divergencia
+        });
+      }
+    })
+    results.forEach(d=>{
+      total_invent += d.qtd_divergencia+d.saldo_estoque
+      total_saldo += d.saldo_estoque
+      total_diverg += d.qtd_divergencia
+      
+      custo_total_invent += (d.qtd_divergencia+d.saldo_estoque)*d.valor_custo
+      custo_total_saldo += d.saldo_estoque*d.valor_custo
+      custo_total_diverg += d.qtd_divergencia*d.valor_custo
+      
+      venda_total_invent += (d.qtd_divergencia+d.saldo_estoque)*d.valor_venda
+      venda_total_saldo += d.saldo_estoque*d.valor_venda
+      venda_total_diverg += d.qtd_divergencia*d.valor_venda
+
+      if (!d.saldo_estoque) {
+        div_positiva += d.qtd_divergencia
+        custo_div_positiva += d.qtd_divergencia*d.valor_custo
+        venda_div_positiva += d.qtd_divergencia*d.valor_venda
+      }
+      if (!(d.qtd_divergencia+d.saldo_estoque)){
+        div_negativa += d.saldo_estoque
+        custo_div_negativa += d.saldo_estoque*d.valor_custo
+        venda_div_negativa += d.saldo_estoque*d.valor_venda
+      }
+    })
+    res = [
+        {'title': 'TOTAL INVENTARIADO', 'data': total_invent},
+        {'title': 'TOTAL NO SALDO', 'data': total_saldo},
+        {'title': 'TOTAL DAS DIVERGÊNCIAS NEGATIVAS', 'data': div_negativa},
+        {'title': '% TOTAL DAS DIVERGÊNCIAS NEGATIVAS', 'data': div_negativa/100},
+        {'title': 'TOTAL DAS DIVERGÊNCIAS POSITIVAS', 'data': div_positiva},
+        {'title': '% TOTAL DAS DIVERGÊNCIAS POSITIVAS', 'data': div_positiva/100},
+        {'title': 'TOTAL DA DIVERGÊNCIA', 'data': total_diverg},
+        {'title': '% TOTAL DA DIVERGÊNCIA', 'data': total_diverg/100},
+  
+        {'title': '', 'data': ''},
+        {'title': 'TOTAL INVENTARIADO', 'data': custo_total_invent},
+        {'title': 'TOTAL NO SALDO', 'data': custo_total_saldo},
+        {'title': 'TOTAL DAS DIVERGÊNCIAS NEGATIVAS', 'data': custo_div_negativa},
+        {'title': '% TOTAL DAS DIVERGÊNCIAS NEGATIVAS', 'data': custo_div_negativa/100},
+        {'title': 'TOTAL DAS DIVERGÊNCIAS POSITIVAS', 'data': custo_div_positiva},
+        {'title': '% TOTAL DAS DIVERGÊNCIAS POSITIVAS', 'data': custo_div_positiva/100},
+        {'title': 'TOTAL DA DIVERGÊNCIA', 'data': custo_total_diverg},
+        {'title': '% TOTAL DA DIVERGÊNCIA', 'data': custo_total_diverg/100},
+  
+        {'title': '', 'data': ''},
+        {'title': 'TOTAL INVENTARIADO', 'data': venda_total_invent},
+        {'title': 'TOTAL NO SALDO', 'data': venda_total_saldo},
+        {'title': 'TOTAL DAS DIVERGÊNCIAS NEGATIVAS', 'data': venda_div_negativa},
+        {'title': '% TOTAL DAS DIVERGÊNCIAS NEGATIVAS', 'data': venda_div_negativa/100},
+        {'title': 'TOTAL DAS DIVERGÊNCIAS POSITIVAS', 'data': venda_div_positiva},
+        {'title': '% TOTAL DAS DIVERGÊNCIAS POSITIVAS', 'data': venda_div_positiva/100},
+        {'title': 'TOTAL DA DIVERGÊNCIA', 'data': venda_total_diverg},
+        {'title': '% TOTAL DA DIVERGÊNCIA', 'data': venda_total_diverg/100},
+      ]    
+
+    return res
+  }
   render() {
     const { confronto, rl_div, itensNaoContados, txt, padrao, teste, status, auditar1, auditar2, divergencia2 } = this.state
     const selectRowProp = {
@@ -461,6 +714,54 @@ export default class Divergencia extends Component {
       noDataText: 'Não há dados para exibir',
       exportCSVText: 'Exportar para csv'
     }
+    const multiDataSet = [
+      {
+        columns: [
+          {title: '', width: {wch:50}}, //pixel
+          {title: '', width: {wch:30}}, //char
+        ],
+        data: [
+          
+          [
+            {value: 'RESUMO DAS QUANTIDADES', style: {font: {sz: '11'}}},
+            {value: ''},
+          ],
+          [
+            {value: 'TOTAL INVENTARIADO', style: {font: {sz: '11'}}},
+            {value: 6193, style: {font: {sz: '11'}}},
+          ],
+          [
+            {value: 'TOTAL NO SALDO', style: {font: {sz: '11'}}},
+            {value: 6427, style: {font: {sz: '11'}}},
+          ],
+          [
+            {value: 'TOTAL DAS DIVERGÊNCIAS NEGATIVAS', style: {font: {sz: '11'}}},
+            {value: 6193, style: {font: {sz: '11'}}},
+          ],
+          [
+            {value: '% TOTAL DAS DIVERGÊNCIAS NEGATIVAS', style: {font: {sz: '11'}}},
+            {value: 6427, style: {font: {sz: '11'}}},
+          ],
+          [
+            {value: 'TOTAL DAS DIVERGÊNCIAS POSITIVAS', style: {font: {sz: '11'}}},
+            {value: 6193, style: {font: {sz: '11'}}},
+          ],
+          [
+            {value: '% TOTAL DAS DIVERGÊNCIAS POSITIVAS', style: {font: {sz: '11'}}},
+            {value: 6427, style: {font: {sz: '11'}}},
+          ],
+          [
+            {value: 'TOTAL DA DIVERGÊNCIA', style: {font: {sz: '11'}}},
+            {value: 6193, style: {font: {sz: '11'}}},
+          ],
+          [
+            {value: '% TOTAL DA DIVERGÊNCIA', style: {font: {sz: '11'}}},
+            {value: 6427, style: {font: {sz: '11'}}},
+          ],
+        ]
+      }
+    ]
+    
     let titulo = 'Divergencia'
     if (status==='audit1'){
       titulo = 'Auditoria 1'
@@ -476,15 +777,7 @@ export default class Divergencia extends Component {
             <ExcelFile
                 filename="rl_relatorios"
                 element={<Button variant="info">Baixar relatórios</Button>}>
-                <ExcelSheet data={divergencia2.map(d =>{
-                  if(d.audit2_selected)
-                    d['qtd_inv_final'] = d['audit2']
-                  else if(d.audit1_selected)
-                    d['qtd_inv_final'] = d['audit1']
-                  else
-                    d['qtd_inv_final'] = d['qtd_inventario']
-                  return d
-                })} name="Confronto">
+                <ExcelSheet data={this.returnConfronto.bind(this)} name="Confronto">
                     <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
                     <ExcelColumn label="SETOR" value="setor_secao"/>
                     <ExcelColumn label="GRUPO" value="grupo"/>
@@ -506,26 +799,37 @@ export default class Divergencia extends Component {
                     <ExcelColumn label="CUSTO DIVERG" value={(c)=> Number((c.valor_custo*c.qtd_divergencia).toFixed(2))}/>
                     <ExcelColumn label="VENDA DIVERG" value={(c)=> Number((c.valor_venda*c.qtd_divergencia).toFixed(2))}/>
                 </ExcelSheet>
-                <ExcelSheet data={divergencia2.filter(d=>d.qtd_divergencia!==0)} name="Relatório Diverg">
+                <ExcelSheet data={this.returnResumoConf.bind(this)} name="Resumo do Confronto">
+                    <ExcelColumn label="" value="title"/>
+                    <ExcelColumn label="" value="data"/>
+                </ExcelSheet>
+                <ExcelSheet data={this.returnDiverg.bind(this)} name="Relatório Diverg">
                     <ExcelColumn label="ENDEREÇO" value="enderecamento"/>
                     <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
                     <ExcelColumn label="SETOR" value="setor_secao"/>
-                    <ExcelColumn label="GRUPO" value="grupo"/>
-                    <ExcelColumn label="FAMÍLIA" value="familia"/>
-                    <ExcelColumn label="SUBFAMILIA" value="subfamilia"/>
+                    <ExcelColumn label="COD" value="cod_interno"/>
+                    <ExcelColumn label="EAN" value="cod_barra"/>
+                    <ExcelColumn label="DESCRIÇÃO" value="descricao_item"/>
+                    <ExcelColumn label="QUANT INVENT" value="qtd_inv_final"/>
+                    <ExcelColumn label="DIVERG" value="qtd_divergencia"/>
+                    <ExcelColumn label="AUDITORIA"/>
+                </ExcelSheet>
+                <ExcelSheet data={this.returnContagem.bind(this)} name="Relatório da Contagem">
+                    <ExcelColumn label="ENDERECO" value="enderecamento"/>
+                    <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
+                    <ExcelColumn label="SETOR" value="setor_secao"/>
+                    <ExcelColumn label="COD" value="cod_interno"/>
                     <ExcelColumn label="EAN" value="cod_barra"/>
                     <ExcelColumn label="LOTE" value="lote"/>
                     <ExcelColumn label="FABRICAÇÃO" value="fabricacao"/>
                     <ExcelColumn label="VALIDADE" value="validade"/>
-                    <ExcelColumn label="REFERÊNCIA" value="referencia"/>
-                    <ExcelColumn label="CÓDIGO INTERNO" value="cod_interno"/>
                     <ExcelColumn label="DESCRIÇÃO" value="descricao_item"/>
                     <ExcelColumn label="QUANT INVENT" value="qtd_inventario"/>
                     <ExcelColumn label="QUANT AUDIT1" value="audit1"/>
                     <ExcelColumn label="QUANT AUDIT2" value="audit2"/>
-                    <ExcelColumn label="DIVERG" value="qtd_divergencia"/>
+                    <ExcelColumn label="CONTAGEM FINAL" value="cout_final"/>
                 </ExcelSheet>
-                <ExcelSheet data={itensNaoContados} name="Relatório itens não contados">
+                <ExcelSheet data={this.returnNaoContados.bind(this)} name="Relatório itens não contados">
                     <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
                     <ExcelColumn label="SETOR" value="setor_secao"/>
                     <ExcelColumn label="COD" value="cod_interno"/>
@@ -533,8 +837,9 @@ export default class Divergencia extends Component {
                     <ExcelColumn label="DESCRIÇÃO" value="descricao_item"/>
                     <ExcelColumn label="REF" value="referencia"/>
                     <ExcelColumn label="SALDO" value="saldo_estoque"/>
-                    <ExcelColumn label="QUANT INVENT" value="qtd_inventario"/>
-                    <ExcelColumn label="DIVERG" value="qtd_divergente"/>
+                    <ExcelColumn label="QUANT INVENT" value={c=>0}/>
+                    <ExcelColumn label="DIVERG" value={c=>c.saldo_estoque*-1}/>
+                    <ExcelColumn label="AUD"/>
                 </ExcelSheet>
             </ExcelFile>
           </div>
@@ -566,7 +871,7 @@ export default class Divergencia extends Component {
               </Button>
           </Row><div className="p-2"/>
           <Row>
-            { status ==='diverg' && <BootstrapTable data={divergencia2} height='340' scrollTop={ 'Bottom' }
+            { status ==='diverg' && <BootstrapTable data={divergencia2.filter(d=>d.qtd_inventario!==0)} height='340' scrollTop={ 'Bottom' }
               cellEdit={{
                 mode: 'dbclick',
                 beforeSaveCell: (row, cellName, cellValue) =>{
@@ -604,7 +909,7 @@ export default class Divergencia extends Component {
               striped search exportCSV
               options={ options }>
               <TableHeaderColumn dataField='id' isKey hidden>ID</TableHeaderColumn>
-              <TableHeaderColumn dataField='cod_barra' editable={ true } width='140' dataSort>EAN  ({divergencia2.length})</TableHeaderColumn>
+              <TableHeaderColumn dataField='cod_barra' editable={ false } width='140' dataSort>EAN  ({divergencia2.filter(d=>d.qtd_inventario!==0).length})</TableHeaderColumn>
               <TableHeaderColumn dataField='enderecamento' editable={ false } width='130' tdStyle={{whiteSpace: 'normal'}} dataSort>Enderecamento</TableHeaderColumn>
               <TableHeaderColumn dataField='descricao_item' editable={ false } tdStyle={{whiteSpace: 'normal'}} dataSort>Descrição</TableHeaderColumn>
               <TableHeaderColumn dataField='validade' editable={ false } width='80' dataSort>Validade</TableHeaderColumn>
