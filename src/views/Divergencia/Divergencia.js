@@ -144,75 +144,6 @@ export default class Divergencia extends Component {
       resolve()
     })
   }
-  createDivergencia2(){
-      const { base, coleta, auditar1,auditar2 } = this.state
-      let divergencia = []
-      Promise.resolve(
-          base.map(b =>{
-            let element = coleta.filter(c => b.cod_barra === c.cod_barra)
-            if (element.length) {
-              let qtd_inventario_total = 0
-              element.map(element => {
-                let div ={
-                  id: element['cod_barra'] + element['enderecamento'] + element['validade'] + element['lote'],
-                  cod_barra: b['cod_barra'],
-                  cod_interno: b['cod_interno'],
-                  descricao_item: b['descricao_item'],
-                  descricao_setor_secao: b['descricao_setor_secao'],
-                  familia: b['familia'],
-                  grupo: b['grupo'],
-                  base_id: b['id'],
-                  inventario_id: b['inventario_id'],
-                  referencia: b['referencia'],
-                  saldo_estoque: b['saldo_estoque'],
-                  setor_secao: b['setor_secao'],
-                  subfamilia: b['subfamilia'],
-                  valor_custo: b['valor_custo'],
-                  valor_venda: b['valor_venda'],
-                  enderecamento: element['enderecamento'],
-                  qtd_inventario: element['qtd_inventario'],
-                  audit1: 0,
-                  audit1_selected: false,
-                  audit2: 0,
-                  audit2_selected: false,
-                  validade: element['validade'],
-                  lote: element['lote'],
-                  fabricacao: element['fabricacao']
-                }
-                qtd_inventario_total += element['qtd_inventario']
-                return div
-              }).map(element => {
-                element['qtd_divergencia'] = qtd_inventario_total - element['saldo_estoque']
-                element['valor_divergente'] = Number(((qtd_inventario_total - element['saldo_estoque'])*element['valor_custo']).toFixed(2))
-                // if(element.qtd_divergencia !== 0) divergencia.push(element)
-                return element
-              }).map(d=>{
-                if(d['qtd_divergencia'] !== 0) {
-                  const a1 = auditar1.find(a1=>a1.id === d.id)
-                  const a2 = auditar2.find(a2=>a2.id === d.id)
-                  if(a2){
-                    d['audit1'] = a1['qtd_inventario']
-                    d['audit2'] = a2['qtd_inventario']
-                    d['qtd_divergencia'] = a2['qtd_divergencia']
-                    d['valor_divergente'] = a2['valor_divergente']
-                    divergencia.push(d)
-                  } else if(a1){
-                    d['audit1'] = a1['qtd_inventario']
-                    d['qtd_divergencia'] = a1['qtd_divergencia']
-                    d['valor_divergente'] = a1['valor_divergente']
-                    divergencia.push(d)
-                  } else {
-                    divergencia.push(d)
-                  }
-                }
-              })
-            }
-          })
-      ).then(()=>{
-          this.setState({rl_div: divergencia})
-          console.log(divergencia)
-      })
-  }
   createDivergencia(){
     const { base, coleta } = this.state
     let divergencia2 = []
@@ -253,7 +184,8 @@ export default class Divergencia extends Component {
           }).map(element => {
             element['qtd_divergencia'] = qtd_inventario_total - element['saldo_estoque']
             element['valor_divergente'] = Number(((qtd_inventario_total - element['saldo_estoque'])*element['valor_custo']).toFixed(2))
-            if(element.qtd_divergencia !== 0) divergencia2.push(element)
+            // if(element.qtd_divergencia !== 0) 
+            divergencia2.push(element)
           })
         }
       })
@@ -543,8 +475,16 @@ export default class Divergencia extends Component {
           <div className="d-inline p-2">
             <ExcelFile
                 filename="rl_relatorios"
-                element={<Button onClick={this.createDivergencia2.bind(this)} variant="info">Baixar relatórios</Button>}>
-                <ExcelSheet data={divergencia2} name="Confronto">
+                element={<Button variant="info">Baixar relatórios</Button>}>
+                <ExcelSheet data={divergencia2.map(d =>{
+                  if(d.audit2_selected)
+                    d['qtd_inv_final'] = d['audit2']
+                  else if(d.audit1_selected)
+                    d['qtd_inv_final'] = d['audit1']
+                  else
+                    d['qtd_inv_final'] = d['qtd_inventario']
+                  return d
+                })} name="Confronto">
                     <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
                     <ExcelColumn label="SETOR" value="setor_secao"/>
                     <ExcelColumn label="GRUPO" value="grupo"/>
@@ -555,18 +495,18 @@ export default class Divergencia extends Component {
                     <ExcelColumn label="CÓDIGO INTERNO" value="cod_interno"/>
                     <ExcelColumn label="DESCRIÇÃO" value="descricao_item"/>
                     <ExcelColumn label="SALDO" value="saldo_estoque"/>
-                    <ExcelColumn label="QUANT INVENT" value="qtd_inventario"/>
+                    <ExcelColumn label="QUANT INVENT" value="qtd_inv_final"/>
                     <ExcelColumn label="CUSTO" value="valor_custo"/>
                     <ExcelColumn label="VENDA" value="valor_venda"/>
                     <ExcelColumn label="DIVERG" value="qtd_divergencia"/>
                     <ExcelColumn label="CUSTO SALDO" value={(c)=> Number((c.valor_custo*c.saldo_estoque).toFixed(2))}/>
                     <ExcelColumn label="VENDA SALDO" value={(c)=> Number((c.valor_venda*c.saldo_estoque).toFixed(2))}/>
-                    <ExcelColumn label="CUSTO INVENT" value={(c)=> Number((c.valor_custo*c.qtd_inventario).toFixed(2))}/>
-                    <ExcelColumn label="VENDA INVENT" value={(c)=> Number((c.valor_venda*c.qtd_inventario).toFixed(2))}/>
+                    <ExcelColumn label="CUSTO INVENT" value={(c)=> Number((c.valor_custo*c.qtd_inv_final).toFixed(2))}/>
+                    <ExcelColumn label="VENDA INVENT" value={(c)=> Number((c.valor_venda*c.qtd_inv_final).toFixed(2))}/>
                     <ExcelColumn label="CUSTO DIVERG" value={(c)=> Number((c.valor_custo*c.qtd_divergencia).toFixed(2))}/>
                     <ExcelColumn label="VENDA DIVERG" value={(c)=> Number((c.valor_venda*c.qtd_divergencia).toFixed(2))}/>
                 </ExcelSheet>
-                <ExcelSheet data={divergencia2} name="Relatório Diverg">
+                <ExcelSheet data={divergencia2.filter(d=>d.qtd_divergencia!==0)} name="Relatório Diverg">
                     <ExcelColumn label="ENDEREÇO" value="enderecamento"/>
                     <ExcelColumn label="DEPARTAMENTO" value="descricao_setor_secao"/>
                     <ExcelColumn label="SETOR" value="setor_secao"/>
