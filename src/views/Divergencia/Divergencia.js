@@ -1022,7 +1022,7 @@ export default class Divergencia extends Component {
               striped search exportCSV
               options={ options }>
               <TableHeaderColumn dataField='id' isKey hidden>ID</TableHeaderColumn>
-              <TableHeaderColumn dataField='cod_barra' editable={ false } width='140' dataSort>EAN  ({divergencia2.filter(d=>d.audit2_selected===true).length})</TableHeaderColumn>
+              <TableHeaderColumn dataField='cod_barra' editable={ false } width='140' dataSort>EAN ({divergencia2.filter(d=>d.audit2_selected===true).length})</TableHeaderColumn>
               <TableHeaderColumn dataField='enderecamento' editable={ false } tdStyle={{whiteSpace: 'normal'}} dataSort>Enderecamento</TableHeaderColumn>
               <TableHeaderColumn dataField='descricao_item' editable={ false } tdStyle={{whiteSpace: 'normal'}} dataSort>Descrição</TableHeaderColumn>
               <TableHeaderColumn dataField='validade' editable={ false } width='80' dataSort>Validade</TableHeaderColumn>

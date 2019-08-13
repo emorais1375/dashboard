@@ -266,31 +266,14 @@ handleClose() {
   this.setState({ showModalCod: false });
 }
 
-handleShow(ev, key) {
-  this.setState({ showModalCod: true, enderecamentoCod: [] });
-  let {inventario_id, tipo_coleta} = this.state;
-  if (inventario_id) {
-    let connection = mysql.createConnection(env.config_mysql);
-    let query = `
-      SELECT cod_barra, SUM(itens_embalagem) AS 'qtd'
-      FROM coleta
-      WHERE inventario_id = ?
-      AND tipo_coleta = ?
-      AND enderecamento = ?
-      GROUP BY cod_barra
-      ORDER BY qtd DESC
-    `
-    connection.query(query, [inventario_id, tipo_coleta, key] ,(error, enderecamentoCod, fields) => {
-      if(error){
-          console.log(error.code,error.fatal)
-          return
-      }
-      this.setState({ enderecamentoCod })
-      connection.end();
-    })
-  } else {
-    console.log('Vazio!')
-  }
+handleShow(ev, end_desc) {
+  Promise.resolve( 
+    this.state.coleta.filter( i =>
+      i.enderecamento === end_desc
+    )
+  ).then( enderecamentoCod =>
+    this.setState({ enderecamentoCod, showModalCod: true })
+  )
 }
 
 render() {
@@ -337,9 +320,7 @@ render() {
                             xs={3} 
                             key={prop.id}
                           >
-                            {/*<Button size="sm">*/}
                             {prop.descricao}
-                            {/*</Button>*/}
                           </Button>
                         </Col>
                       </div>
@@ -430,7 +411,7 @@ render() {
         <Modal.Body>
           <BootstrapTable data={enderecamentoCod} height='350' scrollTop={ 'Bottom' } 
             search exportCSV options={ options }>
-            <TableHeaderColumn dataField='cod_barra' isKey >EAN</TableHeaderColumn>
+            <TableHeaderColumn dataField='cod_barra' isKey >EAN COLETA ({enderecamentoCod.length})</TableHeaderColumn>
             <TableHeaderColumn dataField='qtd' >QUANT</TableHeaderColumn>
           </BootstrapTable>
         </Modal.Body>
