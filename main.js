@@ -448,6 +448,40 @@ ipcMain.on('getBase', (event, arg) => {
     event.returnValue = docs
   })
 })
+ipcMain.on('getEnd', (event, inventario_id) => {
+  let end = db_nedb[6].db
+  end.find({inventario_id: Number(inventario_id)}, (err, docs)=>{
+    event.returnValue = docs
+  })
+})
+ipcMain.on('getEquipe', (event, inventario_id) => {
+  let user_end = db_nedb[5].db
+  let user = db_nedb[8].db
+  user_end.find({inventario_id: Number(inventario_id)}, (err, ue)=>{
+    if (!err) {
+      user.find({id: { $in: ue.map(i=>i.usuario_id)}}, (err, u)=>{
+        if (!err) {
+          Promise.resolve(
+            u.map(i=>({
+              usuario_id: i.id, 
+              nome: i.nome, 
+              qtd_enderecamento: ue.filter(it=>it.usuario_id===i.id).length, 
+              qtd_concluido: ue.filter(it=>it.usuario_id===i.id && it.status==='CONCLUIDO').length,
+            }))
+          ).then((data)=> {
+            event.returnValue = data
+          })
+        } else{
+          console.error(`Erro: Não foi possível abrir usuario.json, cod: ${err}`)
+          event.returnValue = { equipe: [], progressTotal: 0 }
+        }
+      })
+    } else {
+      console.error(`Erro: Não foi possível abrir usuario_enderecamento.json, cod: ${err}`)
+      event.returnValue = { equipe: [], progressTotal: 0 }
+    }
+  })
+})
 ipcMain.on('updateBase', (event, rows) => {
   let db = db_nedb[3]
   let cout_err = 0

@@ -1,12 +1,6 @@
 import React, { Component } from "react";
 import mysql from 'mysql';
 import env from '../../../.env'
-import nedb from 'nedb'
-const base_db = new nedb({filename: 'data/base.json', autoload: true})
-const coleta_db = new nedb({filename: 'data/coleta.json', autoload: true})
-const usuario_enderecamento = new nedb({filename: 'data/usuario_enderecamento.json', autoload: true})
-const enderecamento = new nedb({filename: 'data/enderecamento.json', autoload: true})
-const usuario = new nedb({filename: 'data/usuario.json', autoload: true})
 import { 
   Container, 
   Row, 
@@ -18,7 +12,6 @@ import {
   Modal
 } from "react-bootstrap";
 import { Card } from "../../components/Card/Card";
-// import { Card } from 'react-bootstrap'
 import { BootstrapTable, TableHeaderColumn}  from 'react-bootstrap-table'
 const { ipcRenderer } = window.require('electron')
 
@@ -50,18 +43,6 @@ constructor(props) {
   this.handleShow = this.handleShow.bind(this);
   this.handleClose = this.handleClose.bind(this);
 }
-// lerDados() {
-//   base_db.find(
-//     {inventario_id: inventario_id},
-//     {cod_barra:1,descricao_item:1,id:1,saldo_estoque:1,_id:0},
-//     (err,base2) => this.setState({base2})
-//   )
-
-//   coleta_db.find({},(err,coleta2) => this.setState({coleta2}))
-//   usuario_enderecamento.find({},(err,ue) => this.setState({ue}))
-//   enderecamento.find({},(err,enderecamento) => this.setState({enderecamento2}))
-//   usuario.find({},(err,usuario) => this.setState({usuario}))
-// }
 tick() {
   let s = this.state.segundos + 1; 
   let min = this.state.minutos;
@@ -132,22 +113,8 @@ componentWillUnmount() {
   clearInterval(this.interval);
 }
 lerBase(){
-  let {inventario_id} = this.state;
-  console.log(inventario_id)
   const base = ipcRenderer.sendSync('getBase', 'base')
   this.setState({base})
-  console.log(base)
-  // if (inventario_id) {
-  //   base_db.find({inventario_id: parseInt(inventario_id)}, {_id:0, cod_barra:1,descricao_item:1,saldo_estoque:1}).sort({ saldo_estoque: -1 }).exec(function(err, base){
-  //     if (err) {
-  //       alert(`Erro ao ler a base, cod:. ${err}`)
-  //     } else {
-  //       this.setState({ base })
-  //     }
-  //   }.bind(this));
-  // } else {
-  //   console.log('Vazio!')
-  // }
 }
 lerColeta(){
     const coleta = ipcRenderer.sendSync('getColeta', 'coleta')
@@ -173,127 +140,34 @@ lerColeta(){
     }).then(()=>{
       this.setState({coleta: results})
     })
-
-
-    // coleta_db.find({inventario_id: parseInt(inventario_id), tipo_coleta: tipo_coleta},{cod_barra:1, enderecamento:1, itens_embalagem:1, _id:0}, function(err, coletas){
-    //   var results = []
-    //   coletas.forEach(col => {
-    //     if(!results.find( elem => {
-    //       if(elem.cod_barra === col.cod_barra && elem.enderecamento === col.enderecamento){
-    //         elem.qtd += col.itens_embalagem
-    //         return true;
-    //       }
-    //       return false;
-    //     })){
-    //       results.push({'cod_barra' : col.cod_barra, 'enderecamento': col.enderecamento,'qtd':col.itens_embalagem, 'id': col.cod_barra+col.enderecamento})
-    //     }
-    //   });
-    //   this.setState({coleta: results })
-    // }.bind(this))
-  // }
 }
 lerEnd() {
-  let {inventario_id, tipo_coleta} = this.state;
-  if (inventario_id) {
-    usuario_enderecamento.find({inventario_id:parseInt(inventario_id)}, function(err, rows){
-      var results = [];
-      new Promise(function(resolve, reject){
-        rows.forEach(element => {
-          enderecamento.findOne({id: element.enderecamento_id}, function(err, end){
-            results.push({'id':element.id, 'descricao': end.descricao, 'status': element.status})
-            resolve(results);
-          })
-        });
-      }).then(()=> {
-        results.sort(function(a,b){
-          return b.id - a.id;
-        });
-        this.setState({enderecamento:results})
-      });
-    }.bind(this))
-    
-    // let connection = mysql.createConnection(env.config_mysql);
-    // let query = `
-    //   select e.id, descricao, status
-    //   from usuario_enderecamento ue, enderecamento e 
-    //   where ue.inventario_id=? and tipo=? 
-    //   and enderecamento_id = e.id
-    // `
-    // connection.query(query, [inventario_id, tipo_coleta],(error, enderecamento, fields) => {
-    //   if(error){
-    //       console.log(error.code,error.fatal)
-    //       return
-    //   }
-    //   this.setState({ enderecamento })
-    //   connection.end();
-    // })
-    
-  } else {
-    console.log('Vazio!')
-  }  
+  Promise.resolve(
+    ipcRenderer.sendSync('getEnd', this.state.inventario_id)
+  ).then((enderecamento)=>{
+    this.setState({enderecamento})
+  })
 }
 lerEquipe() {
-  let {inventario_id} = this.state;
-  if (inventario_id) {
-    // usernames = {}
-    // usuario.find({id:parseInt(element.usuario_id)}, function(err, user){
-    //   usernames[user.id] = user.nome;
-    // });
-    usuario_enderecamento.find({inventario_id: parseInt(inventario_id)}, function(err, rows){
-      console.log('ue: ',rows);
-      var users = []
-      rows.forEach(element => {
-        if(!users.find(function(user, i, array){
-          if(user.usuario_id == element.usuario_id){
-            if(element.tipo == 'INVENTARIO'){
-              user.qtd_enderecamento += 1;
-              if(element.status == 'CONCLUIDO'){
-                user.qtd_concluido += 1;
-              }
-              user.progress = (user.qtd_concluido / user.qtd_enderecamento)*100;
-            }
-            return true;
-          }else {
-            return false;
-          }
-        })){
-          new Promise(function(resolve, reject){
-            
-          }).then((result)=>{
-            users.push({'nome': result, 'usuario_id': element.usuario_id, 'qtd_enderecamento':1, 'qtd_concluido': 1, 'progress':0})
-      
-          })
-         }
-      });
-      console.log(users);
+  Promise.resolve(
+    ipcRenderer.sendSync('getEquipe', this.state.inventario_id)
+  ).then( equipe => {
+    let qtd_enderecamentoTotal = 0
+    let qtd_concluidoTotal = 0
+    
+    const eq = equipe.map(i => {
+      i['progress'] = Number(((i['qtd_concluido'] / i['qtd_enderecamento'])*100).toFixed(1))
+      qtd_enderecamentoTotal += i.qtd_enderecamento
+      qtd_concluidoTotal += i.qtd_concluido
+      return i
     })
-    
-    // let connection = mysql.createConnection(env.config_mysql);
-    // let query = `
-    //   select usuario_id, nome, COUNT(enderecamento_id) qtd_enderecamento,
-    //   SUM(CASE WHEN status='CONCLUIDO' THEN 1 ELSE 0 END) qtd_concluido,
-    //   TRUNCATE(SUM(CASE WHEN status='CONCLUIDO' THEN 1 ELSE 0 END)/COUNT(enderecamento_id)*100,0) progress
-    //   from usuario_enderecamento ue, usuario u  
-    //   where inventario_id=? AND tipo='INVENTARIO' AND usuario_id = u.id
-    //   GROUP BY usuario_id
-    // `
-    // connection.query(query, [inventario_id],(error, equipe, fields) => {
-    //   if(error){
-    //       console.log(error.code,error.fatal)
-    //       return
-    //   }
-    //   let progressTotal = 0
-    //   equipe.map(e => {
-    //     progressTotal = progressTotal + e.progress
-    //   })
-    //   progressTotal = (progressTotal/equipe.length).toFixed(1)
-    //   this.setState({ equipe, progressTotal })
-    //   connection.end();
-    // })
-    
-  } else {
-    console.log('Vazio!')
-  }  
+
+    const progressTotal = Number(((qtd_concluidoTotal / qtd_enderecamentoTotal)*100).toFixed(1))
+    return { equipe: eq, progressTotal }
+  }).then(({ equipe, progressTotal }) => {
+    console.log('Edu:', { equipe, progressTotal })
+    this.setState({ equipe, progressTotal })
+  })
 }
 inserirDivergencia() {
   let {inventario_id, tipo_coleta} = this.state;
