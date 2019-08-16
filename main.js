@@ -454,6 +454,58 @@ ipcMain.on('getEnd', (event, inventario_id) => {
     event.returnValue = docs
   })
 })
+ipcMain.on('insertUserEnd', (event, enderecamento) => {
+  let user_end = db_nedb[5].db
+  user_end.insert(enderecamento, err =>{
+    event.returnValue = !err ? true : false
+  })
+})
+ipcMain.on('getEndDesc', (event, inventario_id) => {
+  let end = db_nedb[6].db
+  end.find({inventario_id: Number(inventario_id)}, (err, docs)=>{
+    event.returnValue = docs
+  })
+})
+ipcMain.on('delUserEnd', (event, user_end_ids) => {
+  let user_end = db_nedb[5].db
+  user_end.remove({_id: {$in: user_end_ids}}, {multi: true}, err=>{
+    event.returnValue = !err ? true : false
+  })
+})
+ipcMain.on('getUserEnd', (event, inventario_id) => {
+  let user_end = db_nedb[5].db
+  let end = db_nedb[6].db
+  let user = db_nedb[8].db
+  let usuario_enderecamento = []
+  user_end.find({inventario_id: Number(inventario_id)}, (err, ue)=>{
+    end.find({id: {$in: ue.map(i=>i.enderecamento_id)}}, (err, e)=>{
+      user.find({id: {$in: ue.map(i=>i.usuario_id)}}, (err, u)=>{
+        usuario_enderecamento = ue.map(i=>{
+          i['nome'] = (u.find(it=>it.id===i.usuario_id)).nome
+          i['descricao'] = (e.find(it=>it.id===i.enderecamento_id)).descricao
+          return i
+        })
+        event.returnValue = usuario_enderecamento.sort((a,b)=>{
+          return a.descricao.split('-')[1] - b.descricao.split('-')[1];
+        })
+      })
+    })
+  })
+})
+ipcMain.on('getNomes', (event, inventario_id) => {
+  let login = db_nedb[0].db
+  let user = db_nedb[8].db
+  login.find({login_status: 'ATIVO'}, (err, lg)=>{
+    if (!err) {
+      user.find({id: { $in: lg.map(i=>i.usuario_id)}, cargo: 'INVENTARIANTE'}, (err, u)=>{
+        event.returnValue = u
+      })
+    } else {
+      console.log(`Erro: Não foi possível abrir login.json, cod: ${err}`)
+      event.returnValue = []
+    }
+  })
+})
 ipcMain.on('getEquipe', (event, inventario_id) => {
   let user_end = db_nedb[5].db
   let user = db_nedb[8].db
@@ -472,12 +524,12 @@ ipcMain.on('getEquipe', (event, inventario_id) => {
             event.returnValue = data
           })
         } else{
-          console.error(`Erro: Não foi possível abrir usuario.json, cod: ${err}`)
+          console.log(`Erro: Não foi possível abrir usuario.json, cod: ${err}`)
           event.returnValue = { equipe: [], progressTotal: 0 }
         }
       })
     } else {
-      console.error(`Erro: Não foi possível abrir usuario_enderecamento.json, cod: ${err}`)
+      console.log(`Erro: Não foi possível abrir usuario_enderecamento.json, cod: ${err}`)
       event.returnValue = { equipe: [], progressTotal: 0 }
     }
   })

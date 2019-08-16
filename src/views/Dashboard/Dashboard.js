@@ -1,11 +1,8 @@
 import React, { Component } from "react";
-import mysql from 'mysql';
-import env from '../../../.env'
 import { 
   Container, 
   Row, 
-  Col, 
-  Table, 
+  Col,
   Button, 
   ProgressBar,
   ButtonGroup,
@@ -87,8 +84,6 @@ stopClock(){
     horas: 0, minutos: 0, segundos: 0, "isEnable": false,
     timeFormat: '00:00:00',
   });
-  // this.inserirDivergencia()
-  // this.props.history.push('/admin/divergencia')
   this.props.history.push('/admin/codigo')
 }
 pauseClock(){
@@ -168,98 +163,6 @@ lerEquipe() {
     console.log('Edu:', { equipe, progressTotal })
     this.setState({ equipe, progressTotal })
   })
-}
-inserirDivergencia() {
-  let {inventario_id, tipo_coleta} = this.state;
-  if (inventario_id) {
-    let connection = mysql.createConnection(env.config_mysql);
-
-    let query = `delete from divergencia where inventario_id=?`
-    connection.query(query , [inventario_id], (error, results, fields) => {
-      if(error){
-          console.log(error.code,error.fatal)
-          return
-      }
-      query = `
-        INSERT INTO divergencia (
-          auditar,
-          inventario_id, base_id, enderecamento, cod_barra,
-          cod_interno, descricao_item, valor_custo, valor_venda,
-          saldo_estoque, qtd_inventario  
-        )
-        SELECT 
-        CASE
-        WHEN base_id IS NULL THEN 'NAO PODE'
-        WHEN enderecamento IS NULL  THEN 'NAO PODE'
-        ELSE 'NAO' END auditar,
-          
-          
-          
-          inventario_id, base_id, enderecamento, cod_barra,
-          cod_interno, descricao_item, valor_custo, valor_venda,
-          saldo_estoque, qtd_inventario
-        FROM (
-              SELECT COALESCE(b.inventario_id, c.inventario_id) inventario_id, b.id base_id, enderecamento, COALESCE(b.cod_barra, c.cod_barra) cod_barra,
-              b.cod_interno, b.descricao_item,
-              COALESCE(b.saldo_estoque, 0) saldo_estoque, COALESCE(c.qtd_inventario, 0) qtd_inventario,
-              b.valor_custo, b.valor_venda
-              FROM (
-              SELECT id, inventario_id, cod_barra, cod_interno, saldo_estoque, valor_custo, valor_venda, descricao_item
-              FROM base 
-              WHERE inventario_id = ?
-              ) b
-              LEFT OUTER JOIN (
-              SELECT inventario_id, enderecamento, cod_barra, SUM(itens_embalagem) qtd_inventario
-              FROM coleta 
-              WHERE inventario_id = ? AND tipo_coleta = ?
-              GROUP BY enderecamento, cod_barra
-              ) c
-              ON b.cod_barra = c.cod_barra
-            UNION
-              SELECT COALESCE(b.inventario_id, c.inventario_id) inventario_id, b.id base_id, enderecamento, COALESCE(b.cod_barra, c.cod_barra) cod_barra,
-              b.cod_interno, b.descricao_item,
-              COALESCE(b.saldo_estoque, 0) saldo_estoque, COALESCE(c.qtd_inventario, 0) qtd_inventario,
-              b.valor_custo, b.valor_venda
-              FROM (
-              SELECT id, inventario_id, cod_barra, cod_interno, saldo_estoque, valor_custo, valor_venda, descricao_item 
-              FROM base 
-              WHERE inventario_id = ?
-              ) b
-              RIGHT OUTER JOIN (
-              SELECT inventario_id, enderecamento, cod_barra, SUM(itens_embalagem) qtd_inventario
-              FROM coleta 
-              WHERE inventario_id = ? AND tipo_coleta = ?
-              GROUP BY enderecamento, cod_barra
-              ) c
-              ON b.cod_barra = c.cod_barra
-            ) A
-      `
-      connection.query(query , [inventario_id, inventario_id, tipo_coleta, inventario_id, inventario_id, tipo_coleta], (error, results, fields) => {
-        if(error){
-            console.log(error.code,error.fatal)
-            return
-        }
-        query = `
-          SELECT 1 FROM divergencia where inventario_id=? AND auditar='NAO' LIMIT 1
-        `
-        connection.query(query , [inventario_id], (error, results, fields) => {
-          if(error){
-            console.log(error.code,error.fatal)
-            return
-          }
-          if (!results.length) {
-            alert('Não há divergencias para serem auditadas!')
-          } else {
-            // this.props.history.push('/admin/divergencia')
-            this.props.history.push('/admin/codigo')
-          }
-          connection.end();
-        })
-      })
-    })
-  } else {
-    console.log('inventário ID vazio!')
-  }
 }
 
 handleClose() {

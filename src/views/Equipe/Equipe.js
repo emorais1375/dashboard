@@ -1,6 +1,4 @@
 import React, { Component } from "react";
-import mysql from 'mysql';
-import env from '../../../.env'
 import {
   Container,
   Row,
@@ -15,6 +13,8 @@ import {
   InputGroup
 } from 'react-bootstrap'
 
+const { ipcRenderer } = window.require('electron')
+
 class Equipe extends Component {
   constructor(props) {
     super(props);
@@ -27,7 +27,9 @@ class Equipe extends Component {
       nome: 0, inicial: '', final: '', user_inv: [],
       inventario_id: localStorage.getItem('inv_id') || '',
       inicial_end: '', final_end: '',
-      descricao: ''
+      descricao: '',
+      enderecamento: [],
+      num: []
     };
     this.handleCancel = this.handleCancel.bind(this);
     this.handleChange = this.handleChange.bind(this);
@@ -35,117 +37,76 @@ class Equipe extends Component {
   }
   componentDidMount() {
     this.getDescricao();
-    this.atualizaLista();
+    this.getNomes();
   }
   getDescricao() {
-    let {inventario_id} = this.state
-    if (inventario_id) {
-      let connection = mysql.createConnection(env.config_mysql);
-      let sql = "\
-      select descricao 'desc'\
-      from enderecamento\
-      where id IN (\
-      ( select min(id) from enderecamento where inventario_id=?),\
-      ( select max(id) from enderecamento where inventario_id=?))";
-      connection.query(sql, [inventario_id, inventario_id], (error, results, fields)=>{
-        if(error) {
-          console.log(error.code,error.fatal);
-          return;
-        }
-        if (results.length === 2) {
-          const descricao = results[0].desc.split('-')[0];
-          const inicial_end = results[0].desc.split('-')[1];
-          const final_end = results[1].desc.split('-')[1];
-          this.setState({descricao, inicial_end, final_end});
-        }else if (results.length) {
-          const descricao = results[0].desc.split('-')[0];
-          const inicial_end = results[0].desc.split('-')[1];
-          const final_end = results[0].desc.split('-')[1];
-          this.setState({descricao, inicial_end, final_end});
-        }
-        connection.end();
-      });
-    } else {
-      console.log('Vazio!')
-    }
+    Promise.resolve(
+      ipcRenderer.sendSync('getEndDesc', this.state.inventario_id)
+    ).then(enderecamento=>{
+      if (enderecamento.length) {
+        const num = enderecamento.map(i=>i.descricao.split('-')[1])
+
+        const descricao = enderecamento[0].descricao.split('-')[0]
+        let final_end = Math.max(...num)
+        let inicial_end = Math.min(...num)
+
+        this.setState({enderecamento, descricao, inicial_end, final_end, num})
+      }
+    })
+  }
+  getNomes(){
+    Promise.resolve(
+      ipcRenderer.sendSync('getNomes', this.state.inventario_id)
+    ).then((nomes)=>{
+      this.setState({nomes})
+      this.atualizaLista();
+    })
   }
   atualizaLista() {
-    let connection = mysql.createConnection(env.config_mysql);
-    let inventario_id = this.state.inventario_id;
-    let sql = "\
-    SELECT DISTINCT l.usuario_id 'id', u.nome\
-    FROM login l, usuario u\
-    WHERE l.login_status = 'ATIVO'\
-    AND l.usuario_id = u.id\
-    AND u.cargo = 'INVENTARIANTE'";
-    connection.query(sql, (error, results, fields)=>{
-      if(error) {
-        console.log(error.code,error.fatal);
-        return;
-      }
-      this.setState({nomes: results})
-      sql = "\
-      select ue.*, e.descricao, u.nome \
-      from usuario_enderecamento ue, enderecamento e, usuario u \
-      where ue.inventario_id = ? AND ue.tipo = 'INVENTARIO'\
-      AND ue.enderecamento_id = e.id\
-      AND ue.usuario_id = u.id";
-      connection.query(sql, [inventario_id], (error, results, fields)=>{
-        if(error) {
-          console.log(error.code,error.fatal);
-          return;
-        }
-        let ends = [];
-        let ends_user = [];
-        let end_ant = {}
-
-        if (results.length) {
-          results.map(end_atual=>{
-            if (ends.length) {
-              end_ant = ends[ends.length-1]; // ultimo enderecamento
-              if (end_atual.usuario_id === end_ant.usuario_id) {
-                if (parseInt(end_atual.descricao.split('-')[1]) !== parseInt(end_ant.descricao.split('-')[1]) + 1) {
-                  ends_user.push(ends);
-                  ends = [];
-                }
-                ends.push(end_atual);
-              } else {
+    let ends = [];
+    let ends_user = [];
+    let end_ant = {}
+    Promise.resolve(
+      ipcRenderer.sendSync('getUserEnd', Number(this.state.inventario_id))
+    ).then((results)=>{
+      if (results.length) {
+        results.map(end_atual=>{
+          if (ends.length) {
+            end_ant = ends[ends.length-1]; // ultimo enderecamento
+            if (end_atual.usuario_id === end_ant.usuario_id) {
+              if (parseInt(end_atual.descricao.split('-')[1]) !== parseInt(end_ant.descricao.split('-')[1]) + 1) {
                 ends_user.push(ends);
                 ends = [];
-                ends.push(end_atual);
               }
-            }
-            else{
+              ends.push(end_atual);
+            } else {
+              ends_user.push(ends);
+              ends = [];
               ends.push(end_atual);
             }
-          });
-          ends_user.push(ends);
-        }
-        this.setState({
-          tdArray2: ends_user
+          }
+          else{
+            ends.push(end_atual);
+          }
         });
-        connection.end();
-      });
-    });
+        ends_user.push(ends);
+      }
+      this.setState({
+        tdArray2: ends_user
+      })
+    })
   }
   alerta(prop, key){
-    let enderecamentos = [];
-    prop.map(p=>{
-      enderecamentos.push([p.id]);
-    });
-    if (enderecamentos) {
-      let connection = mysql.createConnection(env.config_mysql);
-      let sql = "\
-      DELETE FROM usuario_enderecamento WHERE id IN (?)";
-      connection.query(sql, [enderecamentos], (error, results, fields)=>{
-        if(error) {
-          console.log(error.code,error.fatal);
-          return;
-        }
+    let enderecamentos = prop.map(p=>p._id)
+    Promise.resolve(
+      ipcRenderer.sendSync('delUserEnd', enderecamentos)
+    ).then((result)=>{
+      if (result) {
         this.atualizaLista();
-        connection.end();
-      });
-    }
+      } else {
+        alert('Não foi possível remover.')
+      }
+    })
   }
   handleChange(ev) {
     const target = ev.target;
@@ -157,55 +118,37 @@ class Equipe extends Component {
   }
   handleSubmit(ev) {
     ev.preventDefault();
+    const {enderecamento,num} = this.state
     let inicial = this.state.inicial;
     let final = this.state.final;
     const nome = this.state.nome;
     let inventario_id = this.state.inventario_id;
-    let enderecamentos = [];
 
     if (inicial && final && nome) {
-        const usuario_id = this.state.nomes[nome-1].id;
-        inicial = this.state.descricao + '-' +inicial;
-        final = this.state.descricao + '-' +final;
-        let connection = mysql.createConnection(env.config_mysql);
-        let sql = "\
-        SELECT id, descricao  FROM enderecamento\
-        WHERE inventario_id=? AND id >= (\
-        SELECT id FROM enderecamento\
-        WHERE inventario_id=? AND descricao=?)\
-        AND id <= ( SELECT id FROM enderecamento\
-        WHERE inventario_id=?  AND descricao=?)";
-        connection.query(sql, [inventario_id, inventario_id, inicial, inventario_id, final], (error, results, fields)=>{
-          if(error) {
-            console.log(error.code, error.fatal);
-            return;
-          }
-          results.map(result => {
-            enderecamentos.push([
-              inventario_id,
-              usuario_id,
-              result.id,
-              'INVENTARIO'
-            ]);
-          })
-          if (enderecamentos.length) {
-            sql = "\
-            INSERT INTO usuario_enderecamento (inventario_id, usuario_id, enderecamento_id, tipo)\
-            VALUES ?";
-            connection.query(sql, [enderecamentos], (error, results, fields)=>{
-              if(error) {
-                console.log(error.code, error.fatal);
-                return;
+        Promise.resolve(
+          enderecamento.filter( i =>
+            i.descricao.split('-')[1] >= Number(inicial) && 
+            i.descricao.split('-')[1] <= Number(final)
+          ).map(i=>({
+            inventario_id: Number(inventario_id),
+            usuario_id: this.state.nomes[nome-1].id,
+            enderecamento_id: i.id
+          }))
+        ).then( end => {
+          if(end.length) {
+            console.log(end)
+            Promise.resolve(
+              ipcRenderer.sendSync('insertUserEnd', end)
+            ).then(res =>{
+              if (res) {
+                this.atualizaLista()
               }
-              this.atualizaLista();
-              this.handleCancel();
-              connection.end();
-            });  
+            })
+          } else {
+            alert('Não foi possível.')
           }
-          else{
-            connection.end();
-          }
-        });
+          this.handleCancel()
+        })
     } else {
       alert('Preencha todos os campos!')
     }
