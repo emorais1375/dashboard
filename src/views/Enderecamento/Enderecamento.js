@@ -1,8 +1,5 @@
 import React, { Component } from "react";
-import mysql from 'mysql';
-import env from '../../../.env'
 import { 
-    FormCheck, 
     Container, 
     Col, 
     Form, 
@@ -12,7 +9,7 @@ import {
     Row
 } from "react-bootstrap";
 import { truncateSync } from "fs";
-
+const { ipcRenderer } = window.require('electron')
 class Enderecamento extends Component {
     constructor(props) {
         super(props);
@@ -32,66 +29,18 @@ class Enderecamento extends Component {
         this.atualizaLista();
     }
     atualizaLista() {
-        let {inventario_id} = this.state;
-        if (inventario_id) {
-            let connection = mysql.createConnection(env.config_mysql);
-            let query = `
-                SELECT 
-                    e.id,
-                    e.descricao,
-                    e.excecao 
-                FROM 
-                    enderecamento e 
-                WHERE 
-                    e.inventario_id = ?
-                ORDER BY
-                    e.id DESC 
-                -- LIMIT 10
-            `
-
-            connection.query(query, [inventario_id],(error, enderecamento, fields) => {
-                if(error){
-                    console.log(error.code,error.fatal)
-                    return
-                }
-                this.setState({enderecamento});
-                query = `
-                    SELECT
-                        e.descricao 'desc',
-                        i.tipo_inventario 'tipo'
-                    FROM
-                        enderecamento e,
-                        inventario i
-                    WHERE
-                        e.id = (
-                            SELECT
-                                MAX(id) 
-                            FROM
-                                enderecamento
-                            WHERE
-                                inventario_id = ?
-                        )
-                    AND
-                        i.id = ?
-                `
-
-                connection.query(query, [inventario_id, inventario_id],(error, results, fields) => {
-                    if(error){
-                        console.log(error.code,error.fatal);
-                        return;
-                    }
-                    if (results.length) {
-                        const prefixo = results[0].desc.split('-')[0];
-                        const inicial = results[0].desc.split('-')[1];
-                        const tipo_inventario = results[0].tipo;
-                        this.setState({prefixo, inicial, tipo_inventario});
-                    }
-                    connection.end();
-                })
-            })
-        } else {
-            console.log('Vazio!')
-        }
+        Promise.resolve(
+          ipcRenderer.sendSync('getEnd', this.state.inventario_id)
+        ).then((enderecamento)=>{
+            this.setState({enderecamento: enderecamento.sort((b,a)=>{
+                return a.descricao.split('-')[1] - b.descricao.split('-')[1]
+            })})
+            if(enderecamento.length){
+                const prefixo = enderecamento[0].descricao.split('-')[0]
+                const inicial = Math.max(...enderecamento.map(i=>i.descricao.split('-')[1]))
+                this.setState({prefixo, inicial})
+            }
+        })
     }
     handleChange2(ev) {
         const target = ev.target
@@ -102,29 +51,17 @@ class Enderecamento extends Component {
         })
     }
     handleChange(ev, key) {
-        const target = ev.target
-        const checked = target.checked
+        const checked = ev.target.checked
         const enderecamento = this.state.enderecamento.slice()
-        const enderecamento_id = enderecamento[key].id
+        const _id = enderecamento[key]._id
         const excecao = checked ? 'SIM' : 'NAO'
-        let connection = mysql.createConnection(env.config_mysql)
-        const query = `
-            UPDATE 
-                enderecamento
-            SET 
-                excecao = ?
-            WHERE 
-                id = ?
-        `
-
-        connection.query(query, [excecao, enderecamento_id], (error, results, fields) => {
-            if(error){
-                console.log(error.code,error.fatal)
-                return
+        Promise.resolve(
+            ipcRenderer.sendSync('updateEnd', {excecao, _id})
+        ).then((res)=>{
+            if(res){
+                enderecamento[key].excecao = excecao
+                this.setState({enderecamento})
             }
-            enderecamento[key].excecao = excecao
-            this.setState({enderecamento})
-            connection.end()
         })
       }
     handleSubmit(ev) {
@@ -143,41 +80,26 @@ class Enderecamento extends Component {
         if (final > inicial) {
             for (let i = inicial+1; i <= final; i++) {
                 descricao = `${prefixo}-${(i).toString().length === 1?'0' + i:i}`
-                enderecamentos.push([
-                    inventario_id,
+                enderecamentos.push({
+                    inventario_id: Number(inventario_id),
                     descricao,
                     descricao_proprietario,
                     excecao
-                ])
+                })
             }
-            let connection = mysql.createConnection(env.config_mysql)
-            let query = `
-                INSERT INTO
-                    enderecamento (inventario_id, descricao,
-                        descricao_proprietario, excecao)
-                VALUES ?
-            `
-
-            connection.query(query, [enderecamentos], (error, results, fields)=>{
-                if(error) {
-                  console.log(error.code, error.fatal);
-                  return;
+            console.log(enderecamentos)
+            Promise.resolve(
+                ipcRenderer.sendSync('insertEnd', enderecamentos)
+            ).then(res=>{
+                if(res){
+                    this.atualizaLista();
+                    this.handleCancel();
                 }
-                alert(results.affectedRows+' enderecamento(s) inserido(s)!')
-                this.atualizaLista();
-                this.handleCancel();
-                connection.end();
             })
         } else {
             alert('Entrada invalida!')
         }
     }
-    // handleChangeCheckAll(ev){
-    //     const check = ev.target.checked?true:false
-    //     this.setState({checkAll:check})
-    //     const divergencia = this.state.divergencia.slice()
-    //     this.setState({divergencia:this.getChangedDivergencia(divergencia, check)})
-    // }
     handleCancel() {
         if (this.state.final) {
             this.setState({final: ''})
@@ -225,22 +147,14 @@ class Enderecamento extends Component {
                 <Table  striped>
                     <thead>
                         <tr>
-                            <th>Id</th>
                             <th>Endereço</th>
-                            <th>Excecao
-                                {/* <Form.Check
-                                    label="Excecao"
-                                    onChange={e => this.handleChangeCheckAll(e)}
-                                    checked = {checkAll}
-                                /> */}
-                            </th>
+                            <th>Excecao</th>
                         </tr>
                     </thead>
                     <tbody>
                         {this.state.enderecamento.map((prop,key) => {
                             return (
-                                <tr key={prop.id}>
-                                    <td>{prop.id}</td>
+                                <tr key={prop._id}>
                                     <td>{prop.descricao}</td>
                                     <td >
                                         <Form.Check 

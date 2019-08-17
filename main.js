@@ -466,6 +466,20 @@ ipcMain.on('getEndDesc', (event, inventario_id) => {
     event.returnValue = docs
   })
 })
+ipcMain.on('updateEnd', (event, {excecao, _id}) => {
+  let end = db_nedb[6].db
+  end.update({
+    _id: _id.toString()
+  }, { $set: { excecao : excecao } }, err =>{
+    event.returnValue = !err ? true : false
+  })
+})
+ipcMain.on('insertEnd', (event, arg) => {
+  let end = db_nedb[6].db
+  end.insert(arg, err =>{
+    event.returnValue = !err ? true : false
+  })
+})
 ipcMain.on('delUserEnd', (event, user_end_ids) => {
   let user_end = db_nedb[5].db
   user_end.remove({_id: {$in: user_end_ids}}, {multi: true}, err=>{
