@@ -140,7 +140,9 @@ lerEnd() {
   Promise.resolve(
     ipcRenderer.sendSync('getEnd', this.state.inventario_id)
   ).then((enderecamento)=>{
-    this.setState({enderecamento})
+    this.setState({enderecamento : enderecamento.sort((a,b)=>{
+      return a.descricao.split('-')[1] - b.descricao.split('-')[1]
+    })})
   })
 }
 lerEquipe() {
@@ -202,7 +204,7 @@ render() {
                 <ButtonGroup vertical size="sm">
                 <Row className="justify-content-xs-center">{enderecamento.map(prop => {
                     return (
-                      <div key={prop.id}>
+                      <div key={prop._id}>
                         <Col className="mb-2" xs={6} sm={4} md={4} lg = {4} xl = {3}>
                           <Button variant={(() => {
                             switch(prop.status) {
