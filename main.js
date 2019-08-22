@@ -628,9 +628,22 @@ ipcMain.on('getBase', (event, arg) => {
   })
 })
 ipcMain.on('getEnd', (event, inventario_id) => {
-  let end = db_nedb[6].db
-  end.find({inventario_id: Number(inventario_id)}, (err, docs)=>{
-    event.returnValue = docs
+  let end = db_nedb[6].db // Falta status
+  let user_end = db_nedb[5].db // Tem status
+  end.find({
+    inventario_id: Number(inventario_id),
+    id: { $exists: true }
+  }, (err, e)=>{
+    user_end.find({
+      inventario_id: Number(inventario_id),
+      enderecamento_id: { $in: e.map(i=>i.id) }
+    }, (err, ue)=>{
+      let enderecamento  = e.map(i=>{
+        i['status'] = (ue.find(it=>it.enderecamento_id===i.id)).status
+        return i
+      })
+      event.returnValue = enderecamento
+    })
   })
 })
 ipcMain.on('insertUserEnd', (event, enderecamento) => {
