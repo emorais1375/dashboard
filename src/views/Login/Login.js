@@ -107,12 +107,12 @@ class Login extends Component {
                 </Card>
                 </div>
                 <br />
-                <Button 
+                {/* <Button 
                   disabled={isLoading}
                   onClick={!isLoading?this.handleReloadDate.bind(this):null}
                 >
                   {isLoading?'Carregando...':'Recarregar'}
-                </Button>
+                </Button> */}
                 <Modal
                   size="sm"
                   show={showMessageErro}

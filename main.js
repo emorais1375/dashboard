@@ -321,12 +321,205 @@ function startExpress () {
 }
 
 function loadDB(){
+  const invent = db_nedb[1].db // Update status, hora e data
+  const coleta = db_nedb[4].db // Add invent_id
+  const userend = db_nedb[5].db
+  const end = db_nedb[6].db // Saber se foi alterado
+  const diverg = db_nedb[7].db
+
+  end.find({ id: { $exists: true }, alterado: true }, function (err, e) {
+    if (!err && e.length) {
+      let values = []
+      let query = ""
+      e.forEach(i=>{
+        values.push(
+          i.excecao,
+          i.id
+        )
+        query = query + "UPDATE enderecamento SET excecao = ? WHERE id = ?;"
+      })
+      const connectionUri = env.config_mysql
+      let connection = mysql.createConnection(connectionUri);
+
+      connection.query(query, values, (err, results, fields)=>{
+        if(err) {
+          console.log(`falha ao sincronizar enderecamento: ${err.code}, ${err.stack}`)
+          return
+        }
+        e.forEach(i => {
+          end.update({
+            _id: i._id
+          }, { $set: { alterado : false } }, err =>{
+            if(err){
+              console.log('enderecamento erro ao sincronizar')
+            }
+          })
+        })
+        connection.end()
+      })
+    }
+  })
+
+  end.find({ id: { $exists: false } }, function (err, e) {
+    if (!err && e.length) {
+      let values = []
+      for(var i=0; i< e.length; i++)
+        values.push([
+          e[i].inventario_id,
+          e[i].descricao,
+          e[i].descricao_proprietario,
+          e[i].excecao
+        ])
+      const connectionUri = env.config_mysql
+      let connection = mysql.createConnection(connectionUri);
+      let query = `
+        INSERT INTO 
+          enderecamento (inventario_id, descricao, descricao_proprietario, excecao)
+        VALUES ?
+      `
+
+      connection.query(query, [values], (err, results, fields)=>{
+        if(err) {
+          console.log(`falha ao sincronizar enderecamento: ${err.code}, ${err.stack}`)
+          return
+        }
+        for (let newId = results.insertId; newId < (results.insertId + results.affectedRows); newId++) {
+          userend.update({
+            _id: e[newId-results.insertId]._id
+          }, { $set: { id : newId } }, err =>{
+            if(err){
+              console.log('enderecamento erro ao sincronizar')
+            }
+          })
+        }
+        connection.end()
+      })
+    }
+  })
+  
+  userend.find({
+    id: { $exists: true },
+    deletado: true
+  }, function (err, user_end) {
+    if (!err && user_end.length) {
+      let values = []
+      let query = ""
+      for(var i=0; i< user_end.length; i++){
+        values.push(
+          user_end[i].id
+        )
+        query = query + "DELETE FROM usuario_enderecamento WHERE id = ?;"
+      }
+      const connectionUri = env.config_mysql
+      let connection = mysql.createConnection(connectionUri);
+      connection.query(query, values, (err, results, fields)=>{
+        if(err) {
+          console.log(`falha ao sincronizar usuario_enderecamento: ${err.code}`)
+          return
+        }
+        user_end.forEach(i => {
+          userend.remove({
+            _id: i._id
+          }, {multi:true}, err =>{
+            if(err){
+              console.log('usuario_enderecamento erro ao sincronizar')
+            }
+          })
+        })
+        connection.end()
+      })
+    }
+  })
+  
+  userend.find({ 
+    id: { $exists: false },
+    deletado: { $exists: false } 
+  }, function (err, user_end) {
+    if (!err && user_end.length) {
+      let values = []
+      for(var i=0; i< user_end.length; i++)
+        values.push([
+          user_end[i].inventario_id,
+          user_end[i].usuario_id,
+          user_end[i].enderecamento_id
+        ])
+      const connectionUri = env.config_mysql
+      let connection = mysql.createConnection(connectionUri);
+      let query = `
+        INSERT INTO 
+          usuario_enderecamento (inventario_id, usuario_id, enderecamento_id)
+        VALUES ?
+      `
+      connection.query(query, [values], (err, results, fields)=>{
+        if(err) {
+          console.log(`falha ao sincronizar usuario_enderecamento: ${err.code}`)
+          return
+        }
+        for (let newId = results.insertId; newId < (results.insertId + results.affectedRows); newId++) {
+          userend.update({
+            _id: user_end[newId-results.insertId]._id
+          }, { $set: { id : newId } }, err =>{
+            if(err){
+              console.log('usuario_enderecamento erro ao sincronizar')
+            }
+          })
+        }
+        connection.end()
+      })
+    }
+  })
+
+  coleta.find({ id: { $exists: false } }, function (err, coletas) {
+    if (!err && coletas.length) {
+      let values = []
+      for(var i=0; i< coletas.length; i++)
+        values.push([
+          coletas[i].inventario_id,
+          coletas[i].usuario_id,
+          coletas[i].data,
+          coletas[i].hora,
+          coletas[i].enderecamento,
+          coletas[i].cod_barra,
+          coletas[i].validade,
+          coletas[i].fabricacao,
+          coletas[i].lote,
+          coletas[i].itens_embalagem,
+          coletas[i].marca,
+          coletas[i].fornecedor
+        ])
+      const connectionUri = env.config_mysql
+      let connection = mysql.createConnection(connectionUri);
+      let query = `
+        INSERT INTO 
+          coleta (inventario_id,usuario_id, data, hora, enderecamento,
+                  cod_barra, validade, fabricacao,
+                  lote, itens_embalagem, marca, fornecedor)
+        VALUES ?
+      `
+
+      connection.query(query, [values], (err, results, fields)=>{
+        if(err) {
+          console.log(`falha ao sincronizar coleta: ${err.code}`)
+          return
+        }
+        for (let newId = results.insertId; newId < (results.insertId + results.affectedRows); newId++) {
+          coleta.update({
+            _id: coletas[newId-results.insertId]._id
+          }, { $set: { id : newId } }, err =>{
+            if(err){
+              console.log('Coleta erro ao sincronizar')
+            }
+          })
+        }
+        connection.end()
+      })
+    }
+  })
+  console.log(db_nedb.length)
   for (let index = 0; index < db_nedb.length; index++) {
     const db = db_nedb[index];
-    if (db.name === 'coleta'){
-      return console.log(`dados carregados de ${db.name}`);
-    }
-    else if (db.name === 'base') {
+    console.log(index, db.name)
+    if (db.name === 'base') {
       pouchdb_base.find({selector: {}}, (err, d) => {
         if(err){
           return console.log(`falha ao carregar dados de ${db.name}, ${err}`)
@@ -348,20 +541,6 @@ function loadDB(){
           })
         }
       })
-      // .then(d=>{
-      //   db.db.remove({}, {multi:true})
-      //   db.db.insert(d.docs, (err) => {
-      //     if(err){
-      //       console.log(err); //caso ocorrer algum erro        
-      //       return;
-      //     } else {
-      //       console.log("dados carregados de " + db.name);
-      //     }
-      //   });
-      // })
-      // .catch(err => { 
-      //   console.log(err);
-      // })
     } else {
       const connectionUri = env.config_mysql
       let connection = mysql.createConnection(connectionUri);
@@ -470,7 +649,7 @@ ipcMain.on('updateEnd', (event, {excecao, _id}) => {
   let end = db_nedb[6].db
   end.update({
     _id: _id.toString()
-  }, { $set: { excecao : excecao } }, err =>{
+  }, { $set: { excecao : excecao, alterado : true } }, err =>{
     event.returnValue = !err ? true : false
   })
 })
@@ -482,7 +661,9 @@ ipcMain.on('insertEnd', (event, arg) => {
 })
 ipcMain.on('delUserEnd', (event, user_end_ids) => {
   let user_end = db_nedb[5].db
-  user_end.remove({_id: {$in: user_end_ids}}, {multi: true}, err=>{
+  user_end.update({
+    _id: {$in: user_end_ids}
+  }, { $set: { deletado : true } }, {multi: true}, err=>{
     event.returnValue = !err ? true : false
   })
 })
@@ -491,7 +672,10 @@ ipcMain.on('getUserEnd', (event, inventario_id) => {
   let end = db_nedb[6].db
   let user = db_nedb[8].db
   let usuario_enderecamento = []
-  user_end.find({inventario_id: Number(inventario_id)}, (err, ue)=>{
+  user_end.find({
+    inventario_id: Number(inventario_id),
+    deletado: { $exists: false } 
+  }, (err, ue)=>{
     end.find({id: {$in: ue.map(i=>i.enderecamento_id)}}, (err, e)=>{
       user.find({id: {$in: ue.map(i=>i.usuario_id)}}, (err, u)=>{
         usuario_enderecamento = ue.map(i=>{
@@ -569,7 +753,7 @@ ipcMain.on('updateBase', (event, rows) => {
 })
 ipcMain.on('getColeta', (event, arg) => {
   let db = db_nedb[4]
-  db.db.find({inventario_id: inventario_id, tipo_coleta: 'INVENTARIO'}, (err, docs)=>{
+  db.db.find({inventario_id: inventario_id}, (err, docs)=>{
     event.returnValue = docs
   })
 })
