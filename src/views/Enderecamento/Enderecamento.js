@@ -17,6 +17,7 @@ class Enderecamento extends Component {
             enderecamento: [],
             tipo_inventario: localStorage.getItem('inv_tipo') || '',
             prefixo: '',
+            ultimo_id: '',
             inicial: '', final: '',
             inventario_id: localStorage.getItem('inv_id') || '',
         }; 
@@ -38,7 +39,8 @@ class Enderecamento extends Component {
             if(enderecamento.length){
                 const prefixo = enderecamento[0].descricao.split('-')[0]
                 const inicial = Math.max(...enderecamento.map(i=>i.descricao.split('-')[1]))
-                this.setState({prefixo, inicial})
+                const ultimo_id = Math.max(...enderecamento.map(i=>i.id))
+                this.setState({prefixo, inicial, ultimo_id})
             }
         })
     }
@@ -70,6 +72,8 @@ class Enderecamento extends Component {
         final = parseInt(final)
         let inicial = this.state.inicial
         inicial = parseInt(inicial)
+        let ultimo_id = this.state.ultimo_id
+        ultimo_id = parseInt(ultimo_id)
         let prefixo = this.state.prefixo
         const enderecamento = this.state.enderecamento.slice()
         let enderecamentos = []
@@ -81,10 +85,12 @@ class Enderecamento extends Component {
             for (let i = inicial+1; i <= final; i++) {
                 descricao = `${prefixo}-${(i).toString().length === 1?'0' + i:i}`
                 enderecamentos.push({
+                    id:  Number(ultimo_id+i-inicial),
                     inventario_id: Number(inventario_id),
                     descricao,
                     descricao_proprietario,
-                    excecao
+                    excecao,
+                    novo: true
                 })
             }
             console.log(enderecamentos)

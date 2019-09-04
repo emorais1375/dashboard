@@ -70,6 +70,7 @@ class Equipe extends Component {
       ipcRenderer.sendSync('getUserEnd', Number(this.state.inventario_id))
     ).then((results)=>{
       if (results.length) {
+        console.log(results)
         results.map(end_atual=>{
           if (ends.length) {
             end_ant = ends[ends.length-1]; // ultimo enderecamento
@@ -132,7 +133,9 @@ class Equipe extends Component {
           ).map(i=>({
             inventario_id: Number(inventario_id),
             usuario_id: this.state.nomes[nome-1].id,
-            enderecamento_id: i.id
+            enderecamento_id: i.id,
+            _enderecamento_id: i._id,
+            status: "ATIVADO"
           }))
         ).then( end => {
           if(end.length) {
